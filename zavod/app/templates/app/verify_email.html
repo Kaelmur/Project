@@ -1,14 +1,8 @@
 {% extends 'app/base.html' %}
 {% block title %}Site{% endblock %}
 {% block content %}
+
 <div class="g">
-<div class="container px-4 px-lg-5">
-    <div class="gg">
-        <h1>Welcome {{ user.username }}</h1>
-    </div>
-</div>
-    </div>
-<div class="container">
     {% if messages %}
      {% for message in messages %}
         <div class="alert alert-{{ message.tags }}" style="text-align: center">
@@ -16,9 +10,11 @@
         </div>
      {% endfor %}
     {% endif %}
-  </div>
-<form method="post" action="{% url 'logout' %}">
-    {% csrf_token %}
-    <button type="submit">logout</button>
-</form>
+<div class="container px-4 px-lg-5">
+    <div class="gg">
+        <h1>Check your email to verify your account</h1>
+    </div>
+</div>
+    </div>
+
 {% endblock %}

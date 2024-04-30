@@ -9,3 +9,7 @@ def home(request):
 
 def verify(request):
     return render(request, "app/verify.html")
+
+
+def verify_email(request):
+    return render(request, "app/verify_email.html")

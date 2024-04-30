@@ -26,7 +26,7 @@ urlpatterns = [
     path("", include("app.urls")),
     path("home/", user_views.register, name="register"),
     path("activate/<uidb64>/<token>", user_views.activate, name="activate"),
-    path('login/', auth_views.LoginView.as_view(redirect_authenticated_user=True, template_name='users/login.html'),
-         name="login"),
+    path('login/', user_views.login_user, name='login'),
+    path('verify-email/<uidb64>/<token>/', user_views.verify_email, name='verify_email'),
     path("logout/", login_required(auth_views.LogoutView.as_view(template_name='users/logout.html')), name="logout")
 ]

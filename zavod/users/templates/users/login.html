@@ -22,7 +22,7 @@
           <form method="POST">
               {% csrf_token %}
               <fieldset class="form-group">
-                  {{ form|crispy }}
+                  <input type="email" name="email" required>
               </fieldset>
               <div class="form-group">
                   <button class="btn btn-outline-dark" type="submit">Login</button>
