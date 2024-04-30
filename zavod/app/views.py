@@ -1,5 +1,11 @@
 from django.shortcuts import render, redirect
+from django.contrib.auth.decorators import login_required
 
 
+@login_required
 def home(request):
-    return render(request, "app/index.html")
+    return render(request, "app/profile.html")
+
+
+def verify(request):
+    return render(request, "app/verify.html")
