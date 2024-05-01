@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required, user_passes_test
-from .forms import UserRegisterForm
+from .forms import UserRegisterForm, UserLoginForm
 from django.contrib import messages
 from django.contrib.auth.tokens import default_token_generator
 from django.template.loader import render_to_string
@@ -14,14 +14,18 @@ from .models import UserManage as CustomUser
 
 def login_user(request):
     if request.method == "POST":
-        email = request.POST["email"]
-        user = CustomUser.objects.filter(email=email).first()
-        if user:
-            send_verification_email(request, user)
-            return redirect("verify_email")
-        else:
-            return render(request, 'login.html', {'error': 'Email not found.'})
-    return render(request, 'users/login.html')
+        form = UserLoginForm(request.POST)
+        if form.is_valid():
+            email = form.cleaned_data['mail']
+            user = CustomUser.objects.filter(email=email).first()
+            if user:
+                send_verification_email(request, user)
+                return redirect("verify_email")
+            else:
+                return render(request, 'users/login.html', {'errors': 'Email not found.', "form": form})
+    else:
+        form = UserLoginForm()
+    return render(request, 'users/login.html', {"form": form})
 
 
 def send_verification_email(request, user):

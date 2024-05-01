@@ -17,17 +17,22 @@
         </div>
      {% endfor %}
     {% endif %}
+    {% if errors %}
+        <div class="alert alert-{{ errors.tags }}" style="text-align: center">
+          {{ errors }}
+        </div>
+    {% endif %}
     <div class="row">
       <div class="col-lg-8 col-md-10 mx-auto content">
           <form method="POST">
-              {% csrf_token %}
-              <fieldset class="form-group">
-                  <input type="email" name="email" required>
-              </fieldset>
-              <div class="form-group">
-                  <button class="btn btn-outline-dark" type="submit">Login</button>
-              </div>
-          </form>
+                {% csrf_token %}
+                <fieldset class="form-group">
+                    {{ form|crispy }}
+                </fieldset>
+                <div class="form-group">
+                    <button class="btn btn-outline-dark" type="submit">Отправить код</button>
+                </div>
+            </form>
           <div class="border-top pt-3">
             <small class="text-muted">
               Don't Have An Account? <a class="ml-2" href="{% url 'register' %}">Sign Up Now</a>

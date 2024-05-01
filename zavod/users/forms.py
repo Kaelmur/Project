@@ -4,13 +4,15 @@ from django.utils.translation import gettext_lazy as _
 from django.core.validators import RegexValidator
 
 
-class UserRegisterForm(forms.ModelForm):
+class UserLoginForm(forms.ModelForm):
+    mail = forms.EmailField()
 
-    # phone_regex = RegexValidator(regex=r'^\+?1?\d{9,15}$',
-    #                              message="Phone number must be entered in the format: '+999999999'."
-    #                                      " Up to 15 digits allowed.")
-    # phone_number = forms.CharField(label="Номер телефона", validators=[phone_regex], max_length=17,
-    #                                help_text=_("Введите свой действительный номер телефона"))
+    class Meta:
+        model = UserManage
+        fields = ["mail"]
+
+
+class UserRegisterForm(forms.ModelForm):
 
     class Meta:
         model = UserManage
