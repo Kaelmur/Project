@@ -17,6 +17,7 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from django.contrib.auth import views as auth_views
+from app import views as app_views
 from users import views as user_views
 from django.contrib.auth.decorators import login_required
 
@@ -28,5 +29,6 @@ urlpatterns = [
     path("activate/<uidb64>/<token>", user_views.activate, name="activate"),
     path('login/', user_views.login_user, name='login'),
     path('verify-email/<uidb64>/<token>/', user_views.verify_email, name='verify_email'),
-    path("logout/", login_required(auth_views.LogoutView.as_view(template_name='users/logout.html')), name="logout")
+    path("logout/", login_required(auth_views.LogoutView.as_view(template_name='users/logout.html')), name="logout"),
+    path("activate-order/<int:pk>", app_views.activate_order, name="activate_order")
 ]

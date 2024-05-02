@@ -7,7 +7,9 @@
         <h1>Welcome {{ user.username }}</h1>
     </div>
 </div>
+    {% if not user.is_superuser %}
     <a href="{% url 'order'%}"><button class="btn btn-outline-dark">Заказать</button></a>
+    {% endif %}
     </div>
 <div class="container">
     {% if messages %}
@@ -18,8 +20,93 @@
      {% endfor %}
     {% endif %}
   </div>
-<form method="post" action="{% url 'logout' %}">
-    {% csrf_token %}
-    <button type="submit">logout</button>
-</form>
+<div class="col-lg-8 col-md-10 mx-auto">
+    {% if not user.is_superuser %}
+    <div class="order-preview">
+        <table class="table">
+            <thead>
+        <tr>
+          <th scope="col">Заказ №</th>
+          <th scope="col">Время</th>
+          <th scope="col">Масса</th>
+          <th scope="col">Статус</th>
+        </tr>
+      </thead>
+            {% for order in orders %}
+            <tbody>
+            <a href="{% url 'order-detail' order.id %}">
+            <tr>
+            <th scope="row">{{ order.id }}</th>
+            <td>{{ order.date_ordered|date:"F d, Y" }}</td>
+            <td>{{ order.mass }} т</td>
+            {% if order.status == "pending" %}
+            <td><i class="bi bi-circle-fill" style="color: grey; font-size: 1rem;"></i></td>
+            {% elif order.status == "continuing" %}
+            <td><i class="bi bi-circle-fill" style="color: yellow; font-size: 1rem;"></i></td>
+            {% else %}
+            <td><i class="bi bi-circle-fill" style="color: green; font-size: 1rem;"></i></td>
+            {% endif %}
+            </tr>
+                </a>
+            </tbody>
+            {% endfor %}
+            </table>
+    </div>
+    {% else %}
+    {% for order in all_orders %}
+    <a href="{% url 'order-detail' order.id %}">
+    <div class="order-preview">
+        <table class="table">
+            <thead>
+        <tr>
+          <th scope="col">Заказ №</th>
+          <th scope="col">Пользователь</th>
+          <th scope="col">Время</th>
+          <th scope="col">Масса</th>
+          <th scope="col">Статус</th>
+        </tr>
+      </thead>
+            <tbody>
+            <tr>
+            <th scope="row">{{ order.id }}</th>
+            <th scope="row">{{ order.user }}</th>
+            <td>{{ order.date_ordered|date:"F d, Y" }}</td>
+            <td>{{ order.mass }} т</td>
+            {% if order.status == "pending" %}
+            <td><i class="bi bi-circle-fill" style="color: grey; font-size: 1rem;"></i></td>
+            {% elif order.status == "continuing" %}
+            <td><i class="bi bi-circle-fill" style="color: yellow; font-size: 1rem;"></i></td>
+            {% else %}
+            <td><i class="bi bi-circle-fill" style="color: green; font-size: 1rem;"></i></td>
+            {% endif %}
+            </tr>
+            </tbody>
+            </table>
+    </div>
+        </a>
+    {% endfor %}
+    {% endif %}
+    {% if is_paginated %}
+    <div style="text-align: center; margin-top: 60px;">
+        {% if page_obj.has_previous %}
+        <a class="btn btn-outline-dark mb-4" href="?page=1">First</a>
+        <a class="btn btn-outline-dark mb-4" href="?page={{ page_obj.previous_page_number }}"><</a>
+    {% endif %}
+
+    {% for num in page_obj.paginator.page_range %}
+        {% if page_obj.number == num %}
+        <a class="btn btn-dark mb-4" href="?page={{ num }}">{{ num }}</a>
+        {% elif num > page_obj.number|add:"-3" and num < page_obj.number|add:"3" %}
+        <a class="btn btn-outline-dark mb-4" href="?page={{ num }}">{{ num }}</a>
+        {% endif %}
+    {% endfor %}
+        {% if page_obj.has_next %}
+        <a class="btn btn-outline-dark mb-4" href="?page={{ page_obj.next_page_number }}">></a>
+        <a class="btn btn-outline-dark mb-4" href="?page={{ page_obj.paginator.num_pages }}">Last</a>
+        {% endif %}
+    {% endif %}
+
+    </div>
+
+</div>
 {% endblock %}
