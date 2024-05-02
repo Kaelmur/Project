@@ -7,9 +7,6 @@
         <h1>Welcome {{ user.username }}</h1>
     </div>
 </div>
-    {% if not user.is_superuser %}
-    <a href="{% url 'order'%}"><button class="btn btn-outline-dark">Заказать</button></a>
-    {% endif %}
     </div>
 <div class="container">
     {% if messages %}
@@ -21,22 +18,23 @@
     {% endif %}
   </div>
 <div class="col-lg-8 col-md-10 mx-auto">
-    {% if not user.is_superuser %}
     <div class="order-preview">
         <table class="table">
             <thead>
         <tr>
           <th scope="col">Заказ №</th>
+          <th scope="col">Пользователь</th>
           <th scope="col">Время</th>
           <th scope="col">Масса</th>
           <th scope="col">Статус</th>
           <th scope="col">Детали</th>
         </tr>
       </thead>
-            {% for order in orders %}
+            {% for order in all_orders %}
             <tbody>
             <tr>
             <th scope="row">{{ order.id }}</th>
+            <th scope="row">{{ order.user }}</th>
             <td>{{ order.date_ordered|date:"F d, Y" }}</td>
             <td>{{ order.mass }} т</td>
             {% if order.status == "pending" %}
@@ -46,7 +44,7 @@
             {% else %}
             <td><i class="bi bi-circle-fill" style="color: green; font-size: 1rem;"></i></td>
             {% endif %}
-                <td><a href="{% url 'order-detail' order.id %}"><button class="btn btn-outline-dark">Посмотреть</button></a></td>
+            <td><a href="{% url 'order-detail' order.id %}"><button class="btn btn-outline-dark">Посмотреть</button></a></td>
             </tr>
             </tbody>
             {% endfor %}
@@ -73,8 +71,6 @@
     {% endif %}
 
     </div>
-    {% else %}
-    {% endif %}
 
 </div>
 {% endblock %}

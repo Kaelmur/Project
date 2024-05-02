@@ -31,6 +31,9 @@
 			<li class="nav-item">
 			<a class="nav-link active" aria-current="page" href="{% url 'users' %}">Покупатели</a>
 			</li>
+			<li class="nav-item">
+			<a class="nav-link active" aria-current="page" href="{% url 'orders' %}">Заказы</a>
+			</li>
 			{% endif %}
 			<li class="nav-item">
             <form id="logout-form" method="post" action="{% url 'logout' %}">

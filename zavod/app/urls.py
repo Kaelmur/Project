@@ -1,10 +1,11 @@
 from django.urls import path
 from app import views
-from .views import OrderCreateView, OrderListView, OrderDetailView, UserListView
+from .views import OrderCreateView, OrderListView, OrderDetailView, UserListView, AllOrdersListView
 from django.contrib.auth.decorators import login_required
 
 urlpatterns = [
     path("", login_required(OrderListView.as_view()), name="profile"),
+    path("orders/", AllOrdersListView.as_view(), name="orders"),
     path("verify/", views.verify, name="verify"),
     path("verify_email", views.verify_email, name="verify_email"),
     path("order", OrderCreateView.as_view(), name="order"),

@@ -13,13 +13,15 @@ def home(request):
     return render(request, "app/profile.html")
 
 
-@staff_member_required
-class AllOrdersListView(ListView):
+class AllOrdersListView(ListView, UserPassesTestMixin):
     model = Order
-    template_name = 'app/profile.html'
+    template_name = 'app/orders.html'
     ordering = ["-date_ordered"]
     context_object_name = "all_orders"
     paginate_by = 2
+
+    def test_func(self):
+        return self.request.user.is_superuser
 
 
 def verify(request):
