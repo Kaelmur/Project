@@ -1,6 +1,7 @@
 {% extends 'app/base.html' %}
 {% block title %}Order {{ object.id }}{% endblock %}
 {% block content %}
+{% load crispy_forms_tags %}
 <div>
 <div class="container px-4 px-lg-5">
     <div class="gg">
@@ -23,13 +24,23 @@
               <br>
               <h3>Масса: {{ object.mass }} тонн</h3>
               <br>
+              <h3>Фракция: {{ object.fraction }}</h3>
+              <br>
               <h3>Сумма: {{ object.price }} тенге</h3>
               <br>
               <h3>Машина: {{ object.registration_certificate }}</h3>
               <br>
-              <div style="text-align: center;">
-              <a class="btn btn-outline-dark" href="{% url 'activate_order' object.id %}">Отправить код</a>
-        </div>
+
+              <form method="POST" enctype='multipart/form-data'>
+                  {% csrf_token %}
+                  <fieldset class="form-group">
+                        {{ form|crispy }}
+                  </fieldset>
+              <div class="form-group">
+              <button class="btn btn-outline-dark" type="submit">Confirm order</button>
+               </div>
+          </form>
+<!--              <a class="btn btn-outline-dark" href="{% url 'activate_order' object.id %}">Отправить код</a>-->
     </div>
   </div>
 </div>

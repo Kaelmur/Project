@@ -74,7 +74,9 @@ def register(request):
         if form.is_valid():
             email = form.cleaned_data['email']
             name = form.cleaned_data['username']
-            user = CustomUser.objects.create_user(email=email, username=name)
+            iin = form.cleaned_data["iin"]
+            address_index = form.cleaned_data["address_index"]
+            user = CustomUser.objects.create_user(email=email, username=name, iin=iin, address_index=address_index)
             user.is_active = False
             activate_email(request, user, form.cleaned_data.get("email"))
             return redirect("verify")
