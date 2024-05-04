@@ -4,7 +4,7 @@
 <div class="g">
 <div class="container px-4 px-lg-5">
     <div class="gg">
-        <h1>Welcome {{ user.username }}</h1>
+        <h1>All orders on moderation</h1>
     </div>
 </div>
     </div>
@@ -30,7 +30,7 @@
           <th scope="col">Детали</th>
         </tr>
       </thead>
-            {% for order in all_orders %}
+            {% for order in paid_orders %}
             <tbody>
             <tr>
             <th scope="row">{{ order.id }}</th>

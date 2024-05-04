@@ -30,7 +30,8 @@
               <br>
               <h3>Машина: {{ object.registration_certificate }}</h3>
               <br>
-
+                  {% if not user.is_superuser %}
+                  {% if not object.status == "модерация" %}
               <form method="POST" enctype='multipart/form-data'>
                   {% csrf_token %}
                   <fieldset class="form-group">
@@ -40,7 +41,13 @@
               <button class="btn btn-outline-dark" type="submit">Confirm order</button>
                </div>
           </form>
-<!--              <a class="btn btn-outline-dark" href="{% url 'activate_order' object.id %}">Отправить код</a>-->
+                  {% endif %}
+                  {% else %}
+                  <img src="{{ object.pay_set.first.file.url }}" style="width: 1080px; height: 400px">
+                  {% if not object.status == 'оплачен' %}
+                  <a class="btn btn-outline-dark" href="{% url 'activate_order' object.id %}">Подтвердить</a>
+                  {% endif %}
+                  {% endif %}
     </div>
   </div>
 </div>

@@ -7,15 +7,29 @@ from .models import Order, Pay
 from .forms import PayForm
 from django.contrib import messages
 from django.core.mail import EmailMessage
-from django.conf import settings
 from reportlab.lib.pagesizes import A4
 from reportlab.platypus import SimpleDocTemplate, Table, Paragraph, TableStyle
-import os
+import io
 
 
 @login_required
 def home(request):
     return render(request, "app/profile.html")
+
+
+class PaidOrderListView(ListView, UserPassesTestMixin):
+    model = Order
+    template_name = 'app/payed_orders.html'
+    ordering = ['-date_ordered']
+    context_object_name = 'paid_orders'
+    paginate_by = 2
+
+    def test_func(self):
+        return self.request.user.is_superuser
+
+    def get_queryset(self):
+        if self.request.user.is_superuser:
+            return Order.objects.filter(status='модерация').order_by("-date_ordered")
 
 
 class AllOrdersListView(ListView, UserPassesTestMixin):
@@ -28,6 +42,10 @@ class AllOrdersListView(ListView, UserPassesTestMixin):
     def test_func(self):
         return self.request.user.is_superuser
 
+    def get_queryset(self):
+        if self.request.user.is_superuser:
+            return Order.objects.exclude(status='неоплачено')
+
 
 def verify(request):
     return render(request, "app/verify.html")
@@ -37,10 +55,13 @@ def verify_email(request):
     return render(request, "app/verify_email.html")
 
 
-def pdf_create(order, content, order_id):
-    pdf = SimpleDocTemplate(content, pagesize=A4)
+def pdf_create(order, order_id):
+    buf = io.BytesIO()
+    pdf = SimpleDocTemplate(buf, pagesize=A4)
     title = Paragraph(f"Check for order #{order_id} of {order.date_ordered.strftime('%d, %B, %Y')}")
     pdf.build([title])
+    buf.seek(0)
+    return buf.getvalue()
 
 
 class OrderCreateView(LoginRequiredMixin, CreateView):
@@ -56,11 +77,8 @@ class OrderCreateView(LoginRequiredMixin, CreateView):
         order = form.instance
         mail_subject = f"Оплата заказа #{order.id}"
         message = "Check pdf file below to checkout"
-        pdf_path = os.path.join(settings.BASE_DIR, "app", "receipts", "receipt.pdf")
-        pdf_create(order, pdf_path, order.id)
-        with open(pdf_path, "rb") as pdf_file:
-            pdf_content = pdf_file.read()
-        email_send = EmailMessage(mail_subject, message, attachments=[("paycheck.pdf", pdf_content,
+        pdf = pdf_create(order, order.id)
+        email_send = EmailMessage(mail_subject, message, attachments=[("paycheck.pdf", pdf,
                                                                        'application/pdf')], to=[self.request.user.email])
         if email_send.send():
             messages.success(self.request, 'Order created, paycheck send to your email!')
@@ -91,13 +109,17 @@ class OrderDetailView(DetailView):
         if form.is_valid():
             file = Pay(file=request.FILES.get("file"), order=self.get_object())
             file.save()
+            order = self.get_object()
+            order.status = 'модерация'
+            order.save()
+            messages.success(self.request, 'Чек принят. Ждите подтверждения')
             return redirect(request.path_info)
 
 
 @login_required
 def activate_order(request, pk):
     order = Order.objects.get(pk=pk)
-    order.status = "continuing"
+    order.status = "оплачен"
     order.save()
     messages.success(request, f"Order activated")
     return redirect("order-detail", order.id)

@@ -19,8 +19,10 @@ class Order(models.Model):
         ('continuing', 'Continuing'),
     ]
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='неоплачено')
+    step = models.CharField(max_length=20, default='охрана')
+    cycle = models.CharField(max_length=20, default=0)
 
 
 class Pay(models.Model):
-    file = models.FileField("Select your check", upload_to="media/")
+    file = models.FileField("Прикрепите ваш чек")
     order = models.ForeignKey(Order, on_delete=models.CASCADE)
