@@ -13,7 +13,8 @@ urlpatterns = [
     path("verify_email", views.verify_email, name="verify_email"),
     path("order", OrderCreateView.as_view(), name="order"),
     path("order/<int:pk>/", OrderDetailView.as_view(), name="order-detail"),
-    path("users/", login_required(UserListView.as_view()), name='users')
+    path("users/", login_required(UserListView.as_view()), name='users'),
+    path('download/<int:file_id>/', views.download_check, name='download-check')
 ]
 
 if settings.DEBUG:

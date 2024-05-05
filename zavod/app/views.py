@@ -1,15 +1,18 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.views.generic import ListView, DetailView, CreateView, DeleteView
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from users.models import UserManage as CustomUser
 from .models import Order, Pay
 from .forms import PayForm
+from django.http import FileResponse
+from django.conf import settings
 from django.contrib import messages
 from django.core.mail import EmailMessage
 from reportlab.lib.pagesizes import A4
 from reportlab.platypus import SimpleDocTemplate, Table, Paragraph, TableStyle
 import io
+import os
 
 
 @login_required
@@ -49,6 +52,18 @@ class AllOrdersListView(ListView, UserPassesTestMixin):
 
 def verify(request):
     return render(request, "app/verify.html")
+
+
+def download_check(request, file_id):
+    file = get_object_or_404(Pay, pk=file_id)
+    file_url = file.file.url[1:]
+    file_extension = os.path.splitext(file_url)[1].lower()
+    allowed_extensions = ['.pdf', '.jpg', '.jpeg', '.png']
+    if file_extension in allowed_extensions:
+        content_type = 'application/pdf' if file_extension == '.pdf' else 'image/*'
+        response = FileResponse(open(file_url, 'rb'), content_type=content_type)
+        response['Content-Disposition'] = f'attachment; filename="{file.id}{file_extension}"'
+        return response
 
 
 def verify_email(request):

@@ -2,6 +2,7 @@ from django.db import models
 from django.utils import timezone
 from users.models import UserManage as CustomUser
 from django.core.validators import MinValueValidator
+from .validators import validate_file_extension
 
 
 class Order(models.Model):
@@ -24,5 +25,5 @@ class Order(models.Model):
 
 
 class Pay(models.Model):
-    file = models.FileField("Прикрепите ваш чек")
+    file = models.FileField("Прикрепите ваш чек", validators=[validate_file_extension])
     order = models.ForeignKey(Order, on_delete=models.CASCADE)
