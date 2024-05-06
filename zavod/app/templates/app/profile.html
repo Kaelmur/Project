@@ -8,8 +8,9 @@
     </div>
 </div>
     {% if not user.is_superuser %}
+    {% for group in user.groups.all %}
+    {% if not group.name == 'security' %}
     <a href="{% url 'order'%}"><button class="btn btn-outline-dark">Заказать</button></a>
-    {% endif %}
     </div>
 <div class="container">
     {% if messages %}
@@ -73,4 +74,7 @@
     {% endif %}
 
 </div>
+{% endif %}
+    {% endfor %}
+    {% endif %}
 {% endblock %}

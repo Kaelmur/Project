@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required, user_passes_test
-from .forms import UserRegisterForm, UserLoginForm
+from .forms import UserRegisterForm, UserLoginForm, UserChangeRoleForm
 from django.contrib import messages
 from django.contrib.auth.tokens import default_token_generator
 from django.template.loader import render_to_string
@@ -10,6 +10,20 @@ from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_str, force_bytes
 from django.core.mail import EmailMessage
 from .models import UserManage as CustomUser
+
+
+def change_role(request, pk):
+    form = UserChangeRoleForm(request.POST)
+    if request.method == "POST":
+        if form.is_valid():
+            user = CustomUser.objects.get(pk=pk)
+            group = form.cleaned_data["role"]
+            user.groups.add(group)
+            messages.success(request, f"{user}'s role changed to {group}")
+            return redirect('user-detail', pk=user.id)
+    else:
+        form = UserChangeRoleForm()
+    return render(request, 'users/add_role_to_user.html', {'form': form})
 
 
 def login_user(request):
@@ -44,8 +58,8 @@ def send_verification_email(request, user):
     })
     email_send = EmailMessage(mail_subject, message, to=[user.email])
     if email_send.send():
-        messages.success(request, f"Dear <b>{user}</b>, please go to you email <b>{user.email}</b> inbox and click on \
-        received activation link to confirm and complete the registration. <b>Note:</b> Check your spam folder.")
+        messages.success(request, f"Dear {user}, please go to you email {user.email} inbox and click on \
+        received activation link to confirm and complete the registration. Note: Check your spam folder.")
     else:
         messages.error(request, f"Problem sending email to {user.email}, please check if you typed it correctly")
 

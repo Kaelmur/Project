@@ -38,6 +38,13 @@
 			<a class="nav-link active" aria-current="page" href="{% url 'paid-orders' %}">Оплачены</a>
 			</li>
 			{% endif %}
+			{% for group in user.groups.all %}
+    		{% if group.name == 'security' %}
+			<li class="nav-item">
+			<a class="nav-link active" aria-current="page" href="{% url 'paid-orders' %}">Оплачены</a>
+			</li>
+			{% endif %}
+			{% endfor %}
 			<li class="nav-item">
             <form id="logout-form" method="post" action="{% url 'logout' %}">
             {% csrf_token %}

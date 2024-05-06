@@ -7,7 +7,6 @@ class UserManage(AbstractUser):
     email = models.EmailField(max_length=254, unique=True)
     iin = models.IntegerField(unique=True, verbose_name="ИИН", default="0")
     address_index = models.IntegerField(unique=True, verbose_name="Почтовый индекс", default="0")
-    role = models.CharField(max_length=20, default="customer")
     email_verified = models.BooleanField(default=False)
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['username']

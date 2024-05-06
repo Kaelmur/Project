@@ -25,8 +25,7 @@
           <th scope="col">#</th>
           <th scope="col">Имя</th>
           <th scope="col">Почта</th>
-          <th scope="col">Роль</th>
-          <th scope="col">Верифицирован</th>
+          <th scope="col">Детали</th>
         </tr>
       </thead>
             <tbody>
@@ -37,12 +36,7 @@
         <th scope="row">{{ user.id }}</th>
          <td>{{ user.username }}</td>
          <td>{{ user.email }}</td>
-         <td>{{ user.role }}</td>
-         {% if user.email_verified %}
-         <td>Да</td>
-         {% else %}
-         <td>Нет</td>
-         {% endif %}
+          <td><a href="{% url 'user-detail' user.id %}"><button class="btn btn-outline-dark">Посмотреть</button></a></td>
          {% endif %}
             </tr>
             {% endfor %}

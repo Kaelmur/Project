@@ -1,19 +1,34 @@
 from django.urls import path
 from app import views
-from .views import OrderCreateView, OrderListView, OrderDetailView, UserListView, AllOrdersListView, PaidOrderListView
+from .views import (OrderCreateView, OrderListView, OrderDetailView, UserListView, AllOrdersListView, PaidOrderListView,
+                    UserDetailView)
 from django.contrib.auth.decorators import login_required
 from django.conf import settings
 from django.conf.urls.static import static
+from django.contrib.auth.decorators import user_passes_test
+
+
+def guest_required(view_func):
+    """
+    Decorator for views that checks that the user is a guest (i.e., not logged in).
+    """
+    decorator = user_passes_test(
+        lambda u: not u.is_authenticated,
+        login_url='/'
+    )
+    return decorator(view_func)
+
 
 urlpatterns = [
     path("", login_required(OrderListView.as_view()), name="profile"),
     path("orders/", AllOrdersListView.as_view(), name="orders"),
     path('paid_orders/', PaidOrderListView.as_view(), name='paid-orders'),
-    path("verify/", views.verify, name="verify"),
-    path("verify_email", views.verify_email, name="verify_email"),
+    path("verify/", guest_required(views.verify), name="verify"),
+    path("verify_email", guest_required(views.verify_email), name="verify_email"),
     path("order", OrderCreateView.as_view(), name="order"),
     path("order/<int:pk>/", OrderDetailView.as_view(), name="order-detail"),
     path("users/", login_required(UserListView.as_view()), name='users'),
+    path("users/<int:pk>/", UserDetailView.as_view(), name='user-detail'),
     path('download/<int:file_id>/', views.download_check, name='download-check')
 ]
 

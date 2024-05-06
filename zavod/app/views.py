@@ -1,12 +1,12 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, user_passes_test
 from django.views.generic import ListView, DetailView, CreateView, DeleteView
-from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin, PermissionRequiredMixin
 from users.models import UserManage as CustomUser
+from django.contrib.auth.models import Group
 from .models import Order, Pay
 from .forms import PayForm
 from django.http import FileResponse
-from django.conf import settings
 from django.contrib import messages
 from django.core.mail import EmailMessage
 from reportlab.lib.pagesizes import A4
@@ -15,27 +15,31 @@ import io
 import os
 
 
+def user_belongs_to_security_group(user):
+    security_group = Group.objects.get(name='security')
+    return security_group in user.groups.all()
+
+
 @login_required
 def home(request):
     return render(request, "app/profile.html")
 
 
-class PaidOrderListView(ListView, UserPassesTestMixin):
+class PaidOrderListView(UserPassesTestMixin, ListView):
     model = Order
     template_name = 'app/payed_orders.html'
-    ordering = ['-date_ordered']
     context_object_name = 'paid_orders'
     paginate_by = 2
 
     def test_func(self):
-        return self.request.user.is_superuser
+        user = CustomUser.objects.get(id=self.request.user.id)
+        return self.request.user.is_superuser or user_belongs_to_security_group(user)
 
     def get_queryset(self):
-        if self.request.user.is_superuser:
-            return Order.objects.filter(status='модерация').order_by("-date_ordered")
+        return Order.objects.filter(status='модерация').order_by("-date_ordered")
 
 
-class AllOrdersListView(ListView, UserPassesTestMixin):
+class AllOrdersListView(UserPassesTestMixin, ListView):
     model = Order
     template_name = 'app/orders.html'
     ordering = ["-date_ordered"]
@@ -46,14 +50,14 @@ class AllOrdersListView(ListView, UserPassesTestMixin):
         return self.request.user.is_superuser
 
     def get_queryset(self):
-        if self.request.user.is_superuser:
-            return Order.objects.exclude(status='неоплачено')
+        return Order.objects.exclude(status='неоплачено')
 
 
 def verify(request):
     return render(request, "app/verify.html")
 
 
+@user_passes_test(lambda u: u.is_superuser)
 def download_check(request, file_id):
     file = get_object_or_404(Pay, pk=file_id)
     file_url = file.file.url[1:]
@@ -106,13 +110,27 @@ class OrderCreateView(LoginRequiredMixin, CreateView):
 class OrderListView(ListView):
     model = Order
     template_name = 'app/profile.html'
-    ordering = ["-date_ordered"]
     context_object_name = "orders"
     paginate_by = 2
 
+    def get_queryset(self):
+        return Order.objects.filter(user=self.request.user).order_by("-date_ordered")
 
-class OrderDetailView(DetailView):
+
+class UserDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
+    model = CustomUser
+    template_name = 'users/user_detail.html'
+
+    def test_func(self):
+        return self.request.user.is_superuser
+
+
+class OrderDetailView(UserPassesTestMixin, DetailView):
     model = Order
+
+    def test_func(self):
+        order = self.get_object()
+        return self.request.user == order.user or self.request.user.is_superuser
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -131,7 +149,7 @@ class OrderDetailView(DetailView):
             return redirect(request.path_info)
 
 
-@login_required
+@user_passes_test(lambda u: u.is_superuser)
 def activate_order(request, pk):
     order = Order.objects.get(pk=pk)
     order.status = "оплачен"
