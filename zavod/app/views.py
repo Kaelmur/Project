@@ -8,6 +8,7 @@ from .models import Order, Pay
 from .forms import PayForm
 from django.http import FileResponse
 from django.contrib import messages
+from django.http import JsonResponse
 from django.core.mail import EmailMessage
 from reportlab.lib.pagesizes import A4
 from reportlab.platypus import SimpleDocTemplate, Table, Paragraph, TableStyle
@@ -167,3 +168,45 @@ class UserListView(ListView, UserPassesTestMixin):
 
     def test_func(self):
         return self.request.user.is_superuser
+
+
+#Тут идут тестовые работы )
+
+def stage_123(request):
+    if request.method == 'POST':
+        lifting_capacity = float(request.POST.get('lifting_capacity'))
+        order_weight = float(request.POST.get('order_weight'))
+        transport_weight = float(request.POST.get('transport_weight'))
+
+        # Здесь нужно получить экземпляр заказа, например, из базы данных
+        order = Order.objects.get(id=request.POST.get('order_id'))
+
+        # stage_2: получение веса транспорта и грузоподъемности, получение информации заказа, и получения количеств кругов
+        order.lifting_capacity = lifting_capacity
+        order.order_weight = order_weight
+        order.transport_weight = transport_weight
+        order.circles = math.ceil(order_weight / lifting_capacity)
+        order.save()
+
+        return JsonResponse({'message': 'Stage 123 completed successfully.'})
+    else:
+        return JsonResponse({'error': 'Invalid request method.'}, status=400)
+
+
+def stage_45(request):
+    if request.method == 'POST':
+        total_weight = float(request.POST.get('total_weight'))
+
+        # Здесь нужно получить экземпляр заказа, например, из базы данных
+        order = Order.objects.get(id=request.POST.get('order_id'))
+
+        # stage_4: загрузка щебня
+        weight = total_weight - order.transport_weight
+        order.order_weight = order.order_weight - weight
+        order.circles = math.ceil(order.order_weight / order.lifting_capacity)
+        order.save()
+
+        return JsonResponse({'message': 'Stage 45 completed successfully.'})
+    else:
+        return JsonResponse({'error': 'Invalid request method.'}, status=400)
+

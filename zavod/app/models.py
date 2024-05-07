@@ -27,3 +27,12 @@ class Order(models.Model):
 class Pay(models.Model):
     file = models.FileField("Прикрепите ваш чек", validators=[validate_file_extension])
     order = models.ForeignKey(Order, on_delete=models.CASCADE)
+
+
+class TestOrder(models.Model):
+    lifting_capacity = models.FloatField()
+    order_weight = models.FloatField()
+    transport_weight = models.FloatField()
+    circles = models.FloatField()
+
+
