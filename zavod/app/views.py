@@ -25,15 +25,28 @@ def home(request):
     return render(request, "app/profile.html")
 
 
-class PaidOrderListView(UserPassesTestMixin, ListView):
+class SecurityOrderListView(UserPassesTestMixin, ListView):
     model = Order
-    template_name = 'app/payed_orders.html'
-    context_object_name = 'paid_orders'
+    template_name = 'app/security_orders.html'
+    context_object_name = 'security_orders'
     paginate_by = 2
 
     def test_func(self):
         user = CustomUser.objects.get(id=self.request.user.id)
-        return self.request.user.is_superuser or user_belongs_to_security_group(user)
+        return user_belongs_to_security_group(user)
+
+    def get_queryset(self):
+        return Order.objects.filter(status='оплачен').order_by("-date_ordered")
+
+
+class PaidOrderListView(UserPassesTestMixin, ListView):
+    model = Order
+    template_name = 'app/paid_orders.html'
+    context_object_name = 'paid_orders'
+    paginate_by = 2
+
+    def test_func(self):
+        return self.request.user.is_superuser
 
     def get_queryset(self):
         return Order.objects.filter(status='модерация').order_by("-date_ordered")
@@ -158,7 +171,17 @@ def activate_order(request, pk):
     return redirect("order-detail", order.id)
 
 
-class UserListView(ListView, UserPassesTestMixin):
+@user_passes_test(lambda u: u.groups.filter(name='security').exists())
+def security_order_approved(request, pk):
+    order = Order.objects.get(pk=pk)
+    order.status = 'выполняется'
+    order.step = 'весы'
+    order.save()
+    messages.success(request, f"Заказ подтвержден")
+    return redirect('security_orders')
+
+
+class UserListView(UserPassesTestMixin, ListView):
     model = CustomUser
     template_name = "app/users.html"
     context_object_name = "users"
