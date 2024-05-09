@@ -1,3 +1,5 @@
+import math
+
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.views.generic import ListView, DetailView, CreateView, DeleteView
@@ -5,7 +7,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin, 
 from users.models import UserManage as CustomUser
 from django.contrib.auth.models import Group
 from .models import Order, Pay
-from .forms import PayForm
+from .forms import PayForm, MeasureForm
 from django.http import FileResponse
 from django.contrib import messages
 from django.core.mail import EmailMessage
@@ -190,3 +192,27 @@ class UserListView(UserPassesTestMixin, ListView):
 
     def test_func(self):
         return self.request.user.is_superuser
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        queryset = queryset.filter(groups=None)
+        return queryset
+
+
+@user_passes_test(lambda u: u.is_superuser)
+def measurements(request, pk):
+    if request.method == "POST":
+        form = MeasureForm(request.POST)
+        if form.is_valid():
+            lifting_capacity = form.cleaned_data['mass']
+            manufactory = form.cleaned_data['manufactory']
+            order = Order.objects.get(pk=pk)
+            order.manufactory = manufactory
+            order.cycle = math.ceil(int(order.mass) / int(lifting_capacity))
+            order.step = 'загрузка'
+            order.save()
+            messages.success(request, f"Заказ взвешен и подтвержден!")
+            return redirect("order-detail", order.id)
+    else:
+        form = MeasureForm()
+    return render(request, 'app/order_measurements.html', {'form': form})

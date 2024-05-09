@@ -16,11 +16,12 @@
      {% endfor %}
     {% endif %}
 
-{% if not user.is_superuser and orders %}
+{% if not user.is_superuser %}
         {% if not user.group.all %}
     <a href="{% url 'order'%}"><button class="btn btn-outline-dark">Заказать</button></a>
   </div>
     </div>
+{% if orders %}
 <div class="col-lg-8 col-md-10 mx-auto">
     <div class="order-preview">
         <table class="table">
@@ -69,6 +70,7 @@
     {% endif %}
     </div>
 </div>
+{% endif %}
     {% endif %}
             {% endif %}
 {% endblock %}

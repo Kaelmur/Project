@@ -14,3 +14,10 @@ class PayForm(forms.ModelForm):
     class Meta:
         model = Pay
         fields = ["file"]
+
+
+class MeasureForm(forms.ModelForm):
+
+    class Meta:
+        model = Order
+        fields = ['mass', 'manufactory']

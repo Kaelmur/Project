@@ -28,6 +28,7 @@ urlpatterns = [
     path("verify_email/", guest_required(views.verify_email), name="verify_email"),
     path("order", OrderCreateView.as_view(), name="order"),
     path("order/<int:pk>/", OrderDetailView.as_view(), name="order-detail"),
+    path('order_measurements/<int:pk>', views.measurements, name='order-measurements'),
     path("users/", UserListView.as_view(), name='users'),
     path("users/<int:pk>/", UserDetailView.as_view(), name='user-detail'),
     path('download/<int:file_id>/', views.download_check, name='download-check')
