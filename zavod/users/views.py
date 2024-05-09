@@ -10,7 +10,6 @@ from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_str, force_bytes
 from django.core.mail import EmailMessage
 from .models import UserManage as CustomUser
-from django_nextjs.render import render_nextjs_page_sync
 
 
 def change_role(request, pk):

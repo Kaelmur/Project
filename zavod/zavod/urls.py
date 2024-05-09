@@ -10,7 +10,6 @@ from app.urls import guest_required
 urlpatterns = [
     path('admin/', admin.site.urls),
     path("", include("app.urls")),
-    path("", include("django_nextjs.urls")),
     path("home/", user_views.register, name="register"),
     path("activate/<uidb64>/<token>", user_views.activate, name="activate"),
     path('login/', guest_required(user_views.login_user), name='login'),
