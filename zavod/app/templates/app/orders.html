@@ -4,7 +4,7 @@
 <div class="g">
 <div class="container px-4 px-lg-5">
     <div class="gg">
-        <h1>Welcome {{ user.username }}</h1>
+        <h1>Заказы</h1>
     </div>
 </div>
     </div>
@@ -32,8 +32,8 @@
           <th scope="col">Детали</th>
         </tr>
       </thead>
-            <tbody>
             {% for order in all_orders %}
+            <tbody>
             <tr>
             <th scope="row">{{ order.id }}</th>
             <th scope="row">{{ order.user }}</th>
@@ -44,8 +44,9 @@
             <td><a href="{% url 'order-detail' order.id %}"><button class="btn btn-outline-dark">Посмотреть</button></a></td>
             </tr>
             </tbody>
-            </table>
             {% endfor %}
+            </table>
+
             {% else %}
             <h1>NO ORDERS</h1>
             {% endif %}
@@ -69,8 +70,6 @@
         <a class="btn btn-outline-dark mb-4" href="?page={{ page_obj.paginator.num_pages }}">Last</a>
         {% endif %}
     {% endif %}
-
     </div>
-
 </div>
 {% endblock %}

@@ -4,10 +4,11 @@
 <div class="g">
 <div class="container px-4 px-lg-5">
     <div class="gg">
-        <h1>Welcome {{ user.username }}</h1>
+        <h1>All orders on moderation</h1>
     </div>
 </div>
-    <div class="container">
+    </div>
+<div class="container">
     {% if messages %}
      {% for message in messages %}
         <div class="alert alert-{{ message.tags }}" style="text-align: center">
@@ -15,39 +16,39 @@
         </div>
      {% endfor %}
     {% endif %}
-
-{% if not user.is_superuser %}
-        {% if not user.groups.all %}
-    <a href="{% url 'order'%}"><button class="btn btn-outline-dark">Заказать</button></a>
   </div>
-    </div>
-{% if orders %}
 <div class="col-lg-8 col-md-10 mx-auto">
     <div class="order-preview">
+        {% if security_approve_orders %}
         <table class="table">
             <thead>
         <tr>
           <th scope="col">Заказ №</th>
+          <th scope="col">Пользователь</th>
+          <th scope="col">Машина</th>
           <th scope="col">Время</th>
           <th scope="col">Масса</th>
-          <th scope="col">Фракция</th>
           <th scope="col">Статус</th>
-          <th scope="col">Детали</th>
+          <th scope="col">Подтвердить</th>
         </tr>
       </thead>
-            {% for order in orders %}
+            {% for order in security_approve_orders %}
             <tbody>
             <tr>
-            <th scope="row">{{ order.id }}</th>
-            <td>{{ order.date_ordered|date:"F d, Y" }}</td>
-            <td>{{ order.mass }} т</td>
-            <td>{{ order.fraction }}</td>
-            <td>{{ order.status }}</td>
-            <td><a href="{% url 'order-detail' order.id %}"><button class="btn btn-outline-dark">Посмотреть</button></a></td>
+            <td scope="row">{{ order.id }}</td>
+            <td scope="row">{{ order.user }}</td>
+            <td scope="row">{{ order.registration_certificate }}</td>
+            <td scope="row">{{ order.date_ordered|date:"F d, Y" }}</td>
+            <td scope="row">{{ order.mass }} т</td>
+            <td scope="row">{{ order.status }}</td>
+            <td scope="row"><a href="{% url 'security-exit' order.id %}"><button class="btn btn-outline-dark">Подтвердить</button></a></td>
             </tr>
             </tbody>
             {% endfor %}
             </table>
+        {% else %}
+        <h1>No orders</h1>
+        {% endif %}
     </div>
     {% if is_paginated %}
     <div style="text-align: center; margin-top: 60px;">
@@ -68,9 +69,8 @@
         <a class="btn btn-outline-dark mb-4" href="?page={{ page_obj.paginator.num_pages }}">Last</a>
         {% endif %}
     {% endif %}
+
     </div>
+
 </div>
-{% endif %}
-    {% endif %}
-            {% endif %}
 {% endblock %}

@@ -10,13 +10,3 @@ class UserManage(AbstractUser):
     email_verified = models.BooleanField(default=False)
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['username']
-
-
-class Profile(models.Model):
-    user = models.OneToOneField(UserManage, on_delete=models.CASCADE)
-
-    def __str__(self):
-        return f"{self.user.username} Profile"
-
-    def save(self, *args, **kwargs):
-        super(Profile, self).save(*args, **kwargs)

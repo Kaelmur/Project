@@ -12,6 +12,7 @@ class Order(models.Model):
         ('continuing', 'Continuing'),
     ]
     MANUFACTORY_CHOICES = [('4 цех', '4 цех'), ('ЦПШ', 'ЦПШ')]
+    BUYER_CHOICES = [('юр.лицо', "юр.лицо"), ("физ.лицо", "физ.лицо")]
     registration_certificate = models.CharField(max_length=100, verbose_name="Номер машины")
     fraction = models.CharField(max_length=100, choices=[("0-5", "0-5"), ("5-20", "5-20"), ("20-40", "20-40"),
                                                          ("5-40", "5-40"), ("40-70", "40-70"),
@@ -21,7 +22,9 @@ class Order(models.Model):
     price = models.CharField(max_length=100, default=0)
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
     date_ordered = models.DateTimeField(default=timezone.now)
-    manufactory = models.CharField(max_length=20, choices=MANUFACTORY_CHOICES, default='4 цех')
+    manufactory = models.CharField(max_length=20, choices=MANUFACTORY_CHOICES, default='Не указано')
+    buyer = models.CharField(max_length=20, choices=BUYER_CHOICES, default='физ.лицо')
+    weight_left = models.IntegerField(default=0)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='неоплачено')
     step = models.CharField(max_length=20, default='охрана')
     cycle = models.CharField(max_length=20, default=0)

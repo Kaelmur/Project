@@ -43,6 +43,13 @@
 			<li class="nav-item">
 			<a class="nav-link active" aria-current="page" href="{% url 'security_orders' %}">Оплачены</a>
 			</li>
+			<li class="nav-item">
+			<a class="nav-link active" aria-current="page" href="{% url 'security_approve_orders' %}">Загруженные</a>
+			</li>
+			{% elif group.name == 'loader' %}
+			<li class="nav-item">
+			<a class="nav-link active" aria-current="page" href="{% url 'loader_orders' %}">Подтвержденные</a>
+			</li>
 			{% endif %}
 			{% endfor %}
 			<li class="nav-item">

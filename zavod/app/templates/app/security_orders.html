@@ -19,6 +19,7 @@
   </div>
 <div class="col-lg-8 col-md-10 mx-auto">
     <div class="order-preview">
+        {% if security_orders %}
         <table class="table">
             <thead>
         <tr>
@@ -45,6 +46,9 @@
             </tbody>
             {% endfor %}
             </table>
+        {% else %}
+        <h1>No orders</h1>
+        {% endif %}
     </div>
     {% if is_paginated %}
     <div style="text-align: center; margin-top: 60px;">

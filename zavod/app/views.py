@@ -7,7 +7,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin, 
 from users.models import UserManage as CustomUser
 from django.contrib.auth.models import Group
 from .models import Order, Pay
-from .forms import PayForm, MeasureForm
+from .forms import PayForm, MeasureForm, MeasureApprovedForm
 from django.http import FileResponse
 from django.contrib import messages
 from django.core.mail import EmailMessage
@@ -22,9 +22,28 @@ def user_belongs_to_security_group(user):
     return security_group in user.groups.all()
 
 
+def user_belongs_to_loader_group(user):
+    loader_group = Group.objects.get(name='loader')
+    return loader_group in user.groups.all()
+
+
 @login_required
 def home(request):
     return render(request, "app/profile.html")
+
+
+class LoaderOrderListView(UserPassesTestMixin, ListView):
+    model = Order
+    template_name = 'app/loader_orders.html'
+    context_object_name = 'loader_orders'
+    paginate_by = 2
+
+    def test_func(self):
+        user = CustomUser.objects.get(id=self.request.user.id)
+        return user_belongs_to_loader_group(user)
+
+    def get_queryset(self):
+        return Order.objects.filter(step='загрузка').order_by("-date_ordered")
 
 
 class SecurityOrderListView(UserPassesTestMixin, ListView):
@@ -38,7 +57,21 @@ class SecurityOrderListView(UserPassesTestMixin, ListView):
         return user_belongs_to_security_group(user)
 
     def get_queryset(self):
-        return Order.objects.filter(status='оплачен').order_by("-date_ordered")
+        return Order.objects.filter(status='оплачен').order_by("-date_ordered") or Order.objects.filter(status='выехал').order_by("-date_ordered")
+
+
+class SecurityApproveOrderListView(UserPassesTestMixin, ListView):
+    model = Order
+    template_name = 'app/security_approve_orders.html'
+    context_object_name = 'security_approve_orders'
+    paginate_by = 2
+
+    def test_func(self):
+        user = CustomUser.objects.get(id=self.request.user.id)
+        return user_belongs_to_security_group(user)
+
+    def get_queryset(self):
+        return Order.objects.filter(step='охрана-выход').order_by("-date_ordered")
 
 
 class PaidOrderListView(UserPassesTestMixin, ListView):
@@ -98,27 +131,38 @@ def pdf_create(order, order_id):
     return buf.getvalue()
 
 
-class OrderCreateView(LoginRequiredMixin, CreateView):
+class OrderCreateView(UserPassesTestMixin, LoginRequiredMixin, CreateView):
     model = Order
-    fields = ["registration_certificate", "fraction", "mass"]
+    fields = ["registration_certificate", "fraction", "mass", 'buyer']
     success_url = "/"
+
+    def test_func(self):
+        return not self.request.user.groups.exists()
 
     def form_valid(self, form):
         form.instance.user = self.request.user
         mass = form.cleaned_data['mass']
+        buyer = form.cleaned_data['buyer']
         form.instance.price = mass * 20
         response = super().form_valid(form)
         order = form.instance
-        mail_subject = f"Оплата заказа #{order.id}"
-        message = "Check pdf file below to checkout"
-        pdf = pdf_create(order, order.id)
-        email_send = EmailMessage(mail_subject, message, attachments=[("paycheck.pdf", pdf,
-                                                                       'application/pdf')], to=[self.request.user.email])
-        if email_send.send():
-            messages.success(self.request, 'Order created, paycheck send to your email!')
+        if buyer == "юр.лицо":
+            mail_subject = f"Оплата заказа #{order.id}"
+            message = "Check pdf file below to checkout"
+            pdf = pdf_create(order, order.id)
+            email_send = EmailMessage(mail_subject, message, attachments=[("paycheck.pdf", pdf,
+                                                                           'application/pdf')],
+                                      to=[self.request.user.email])
+            if email_send.send():
+                messages.success(self.request, 'Order created, paycheck send to your email!')
+            else:
+                messages.error(self.request, f"Problem sending email to {self.request.user.email},"
+                                              f""f"please check if you typed it correctly")
         else:
-            messages.error(self.request, f"Problem sending email to {self.request.user.email},"
-                                          f""f"please check if you typed it correctly")
+            order.status = "оплачен"
+            order.save()
+            messages.success(self.request, f"Order activated")
+            return redirect("order-detail", order.id)
         return response
 
 
@@ -183,6 +227,15 @@ def security_order_approved(request, pk):
     return redirect('security_orders')
 
 
+@user_passes_test(lambda u: u.groups.filter(name='loader').exists())
+def loader_order_approved(request, pk):
+    order = Order.objects.get(pk=pk)
+    order.step = 'весы-подтверждение'
+    order.save()
+    messages.success(request, f"Загрузка подтверждена")
+    return redirect('loader_orders')
+
+
 class UserListView(UserPassesTestMixin, ListView):
     model = CustomUser
     template_name = "app/users.html"
@@ -192,11 +245,6 @@ class UserListView(UserPassesTestMixin, ListView):
 
     def test_func(self):
         return self.request.user.is_superuser
-
-    def get_queryset(self):
-        queryset = super().get_queryset()
-        queryset = queryset.filter(groups=None)
-        return queryset
 
 
 @user_passes_test(lambda u: u.is_superuser)
@@ -208,7 +256,9 @@ def measurements(request, pk):
             manufactory = form.cleaned_data['manufactory']
             order = Order.objects.get(pk=pk)
             order.manufactory = manufactory
-            order.cycle = math.ceil(int(order.mass) / int(lifting_capacity))
+            if order.cycle == 0:
+                order.cycle = math.ceil(int(order.mass) / int(lifting_capacity))
+                order.weight_left = order.mass
             order.step = 'загрузка'
             order.save()
             messages.success(request, f"Заказ взвешен и подтвержден!")
@@ -216,3 +266,34 @@ def measurements(request, pk):
     else:
         form = MeasureForm()
     return render(request, 'app/order_measurements.html', {'form': form})
+
+
+@user_passes_test(lambda u: u.is_superuser)
+def measurements_approved(request, pk):
+    if request.method == 'POST':
+        form = MeasureApprovedForm(request.POST)
+        if form.is_valid():
+            measured_weight = form.cleaned_data['mass']
+            order = Order.objects.get(pk=pk)
+            order.weight_left = int(order.weight_left) - int(measured_weight)
+            order.step = 'охрана-выход'
+            order.save()
+            messages.success(request, f"Заказ взвешен и подтвержден!")
+            return redirect('orders')
+    else:
+        form = MeasureApprovedForm()
+    return render(request, 'app/order_approved_measurements.html', {'form': form})
+
+
+@user_passes_test(lambda u: u.groups.filter(name='security').exists())
+def security_order_exit_approved(request, pk):
+    order = Order.objects.get(pk=pk)
+    order.status = 'выехал'
+    order.step = 'охрана'
+    order.cycle = int(order.cycle) - 1
+    if int(order.cycle) <= 0:
+        order.step = 'закончен'
+        order.status = 'закончен'
+    order.save()
+    messages.success(request, f"Выезд зазачика подтвержден")
+    return redirect('security_approve_orders')

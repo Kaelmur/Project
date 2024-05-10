@@ -21,3 +21,10 @@ class MeasureForm(forms.ModelForm):
     class Meta:
         model = Order
         fields = ['mass', 'manufactory']
+
+
+class MeasureApprovedForm(forms.ModelForm):
+
+    class Meta:
+        model = Order
+        fields = ['mass']
