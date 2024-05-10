@@ -6,8 +6,8 @@ from django.views.generic import ListView, DetailView, CreateView, DeleteView
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin, PermissionRequiredMixin
 from users.models import UserManage as CustomUser
 from django.contrib.auth.models import Group
-from .models import Order, Pay
-from .forms import PayForm, MeasureForm, MeasureApprovedForm
+from .models import Order, Pay, FractionPrice
+from .forms import PayForm, MeasureForm, MeasureApprovedForm, FractionPriceForm
 from django.http import FileResponse
 from django.contrib import messages
 from django.core.mail import EmailMessage
@@ -143,7 +143,9 @@ class OrderCreateView(UserPassesTestMixin, LoginRequiredMixin, CreateView):
         form.instance.user = self.request.user
         mass = form.cleaned_data['mass']
         buyer = form.cleaned_data['buyer']
-        form.instance.price = mass * 20
+        fraction = form.cleaned_data['fraction']
+        fraction_price = FractionPrice.objects.get(fraction=fraction)
+        form.instance.price = mass * fraction_price.price
         response = super().form_valid(form)
         order = form.instance
         if buyer == "юр.лицо":
@@ -283,6 +285,27 @@ def measurements_approved(request, pk):
     else:
         form = MeasureApprovedForm()
     return render(request, 'app/order_approved_measurements.html', {'form': form})
+
+
+@user_passes_test(lambda u: u.is_superuser)
+def fraction_price(request):
+    if request.method == "POST":
+        form = FractionPriceForm(request.POST)
+        if form.is_valid():
+            fraction_price_instance = form.save(commit=False)
+            fraction = form.cleaned_data['fraction']
+            existing_fraction_price = FractionPrice.objects.filter(fraction=fraction).first()
+            if existing_fraction_price:
+                existing_fraction_price.price = fraction_price_instance.price
+                existing_fraction_price.save()
+                messages.success(request, f"Цена на фракцию обновлена")
+            else:
+                fraction_price_instance.save()
+                messages.success(request, f"Цена на фракцию установлена")
+            return redirect('profile')
+    else:
+        form = FractionPriceForm()
+    return render(request, "app/fraction_price.html", {"form": form})
 
 
 @user_passes_test(lambda u: u.groups.filter(name='security').exists())

@@ -5,6 +5,15 @@ from django.core.validators import MinValueValidator
 from .validators import validate_file_extension
 
 
+class FractionPrice(models.Model):
+    fraction = models.CharField(max_length=100, choices=[
+        ("0-5", "0-5"), ("5-20", "5-20"), ("20-40", "20-40"),
+        ("5-40", "5-40"), ("40-70", "40-70"),
+        ('Бутовый камень', "Бутовый камень")
+    ], verbose_name="Фракция щебня")
+    price = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name="Цена, т")
+
+
 class Order(models.Model):
     STATUS_CHOICES = [
         ('done', 'Done'),
@@ -28,6 +37,7 @@ class Order(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='неоплачено')
     step = models.CharField(max_length=20, default='охрана')
     cycle = models.CharField(max_length=20, default=0)
+    fraction_price = models.ForeignKey(FractionPrice, on_delete=models.SET_NULL, null=True)
 
 
 class Pay(models.Model):

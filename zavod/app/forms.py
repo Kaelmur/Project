@@ -1,5 +1,5 @@
 from django import forms
-from .models import Order, Pay
+from .models import Order, Pay, FractionPrice
 
 
 class OrderForm(forms.ModelForm):
@@ -28,3 +28,10 @@ class MeasureApprovedForm(forms.ModelForm):
     class Meta:
         model = Order
         fields = ['mass']
+
+
+class FractionPriceForm(forms.ModelForm):
+
+    class Meta:
+        model = FractionPrice
+        fields = "__all__"

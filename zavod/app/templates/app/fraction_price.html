@@ -1,0 +1,29 @@
+{% extends 'app/base.html' %}
+{% block title %}Fraction price{% endblock %}
+{% load crispy_forms_tags %}
+{% block content %}
+<div class="g">
+<div class="container px-4 px-lg-5">
+    <div class="gg">
+        <h1>Установить цену за фракцию</h1>
+    </div>
+</div>
+    </div>
+<div class="container">
+    <div class="row">
+      <div class="col-lg-8 col-md-10 mx-auto content">
+            <form method="POST">
+                {% csrf_token %}
+                <fieldset class="form-group">
+                    {{ form|crispy }}
+                </fieldset>
+                <div class="form-group">
+                    <button class="btn btn-outline-dark" type="submit">Подтвердить</button>
+                </div>
+            </form>
+            <div class="border-top pt-3">
+            </div>
+        </div>
+    </div>
+  </div>
+{% endblock %}

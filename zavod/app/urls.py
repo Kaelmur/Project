@@ -35,7 +35,8 @@ urlpatterns = [
     path('order_approve_measurements/<int:pk>', views.measurements_approved, name='order-approve-mesurements'),
     path("users/", UserListView.as_view(), name='users'),
     path("users/<int:pk>/", UserDetailView.as_view(), name='user-detail'),
-    path('download/<int:file_id>/', views.download_check, name='download-check')
+    path('download/<int:file_id>/', views.download_check, name='download-check'),
+    path('fraction_price/', views.fraction_price, name='fraction-price')
 ]
 
 if settings.DEBUG:
