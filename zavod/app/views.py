@@ -1,6 +1,4 @@
-import math
-
-from django.shortcuts import render, redirect, get_object_or_404
+from django.shortcuts import render, redirect, get_object_or_404, Http404
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.views.generic import ListView, DetailView, CreateView, DeleteView
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin, PermissionRequiredMixin
@@ -12,9 +10,15 @@ from django.http import FileResponse
 from django.contrib import messages
 from django.core.mail import EmailMessage
 from reportlab.lib.pagesizes import A4
-from reportlab.platypus import SimpleDocTemplate, Table, Paragraph, TableStyle
+from PyPDF2 import PdfWriter, PdfReader
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
+from django.db.models import Q
 import io
 import os
+import math
 
 
 def user_belongs_to_security_group(user):
@@ -57,7 +61,7 @@ class SecurityOrderListView(UserPassesTestMixin, ListView):
         return user_belongs_to_security_group(user)
 
     def get_queryset(self):
-        return Order.objects.filter(status='оплачен').order_by("-date_ordered") or Order.objects.filter(status='выехал').order_by("-date_ordered")
+        return Order.objects.filter(Q(status='оплачен') | Q(status='выехал')).order_by("-date_ordered")
 
 
 class SecurityApproveOrderListView(UserPassesTestMixin, ListView):
@@ -90,7 +94,6 @@ class PaidOrderListView(UserPassesTestMixin, ListView):
 class AllOrdersListView(UserPassesTestMixin, ListView):
     model = Order
     template_name = 'app/orders.html'
-    ordering = ["-date_ordered"]
     context_object_name = "all_orders"
     paginate_by = 2
 
@@ -98,7 +101,7 @@ class AllOrdersListView(UserPassesTestMixin, ListView):
         return self.request.user.is_superuser
 
     def get_queryset(self):
-        return Order.objects.exclude(status='неоплачено')
+        return Order.objects.exclude(status='неоплачено').order_by("-date_ordered")
 
 
 def verify(request):
@@ -122,13 +125,34 @@ def verify_email(request):
     return render(request, "app/verify_email.html")
 
 
-def pdf_create(order, order_id):
-    buf = io.BytesIO()
-    pdf = SimpleDocTemplate(buf, pagesize=A4)
-    title = Paragraph(f"Check for order #{order_id} of {order.date_ordered.strftime('%d, %B, %Y')}")
-    pdf.build([title])
-    buf.seek(0)
-    return buf.getvalue()
+def pdf_create(order, fraction, price, price_without_nds, price_nds):
+    packet = io.BytesIO()
+    can = canvas.Canvas(packet, pagesize=letter)
+    pdfmetrics.registerFont(TTFont('calibri', 'calibri.ttf'))
+    can.setFont("calibri", 10)
+    can.drawString(110, 450, f'{order.user.username}{order.user.iin}, {order.user.address_index}, Республика Казахстан, г.Актобе')
+    can.drawString(90, 412, f'{order.user.username} {order.user.iin}')
+    can.drawString(115, 385, f'{order.user.address_index}, Республика Казахстан, Актюбинская обл., г.Актобе')
+    can.drawString(175, 181, str(order.mass))
+    can.drawString(202, 181, str(fraction.price))
+    can.drawString(252, 181, str(price_without_nds))
+    can.drawString(252, 143, str(price_without_nds))
+    can.drawString(345, 143, str(price_nds))
+    can.drawString(345, 181, str(price_nds))
+    can.drawString(510, 181, str(price))
+    can.drawString(510, 143, str(price))
+    can.save()
+    packet.seek(0)
+    new_pdf = PdfReader(packet)
+    existing_pdf = PdfReader(open("./check.pdf", "rb"))
+    output = PdfWriter()
+    page = existing_pdf.pages[0]
+    page.merge_page(new_pdf.pages[0])
+    output.add_page(page)
+    output_pdf_bytes_final = io.BytesIO()
+    output.write(output_pdf_bytes_final)
+    output_pdf_bytes_final.seek(0)
+    return output_pdf_bytes_final.getvalue()
 
 
 class OrderCreateView(UserPassesTestMixin, LoginRequiredMixin, CreateView):
@@ -144,14 +168,16 @@ class OrderCreateView(UserPassesTestMixin, LoginRequiredMixin, CreateView):
         mass = form.cleaned_data['mass']
         buyer = form.cleaned_data['buyer']
         fraction = form.cleaned_data['fraction']
-        fraction_price = FractionPrice.objects.get(fraction=fraction)
-        form.instance.price = mass * fraction_price.price
+        fractions_price = FractionPrice.objects.get(fraction=fraction)
+        price_without_nds = mass * float(fractions_price.price)
+        price_nds = (mass * float(fractions_price.price)) * 0.12
+        form.instance.price = price_without_nds + (price_without_nds * 0.12)
         response = super().form_valid(form)
         order = form.instance
         if buyer == "юр.лицо":
             mail_subject = f"Оплата заказа #{order.id}"
             message = "Check pdf file below to checkout"
-            pdf = pdf_create(order, order.id)
+            pdf = pdf_create(order, fractions_price, form.instance.price, price_without_nds, price_nds)
             email_send = EmailMessage(mail_subject, message, attachments=[("paycheck.pdf", pdf,
                                                                            'application/pdf')],
                                       to=[self.request.user.email])
@@ -160,6 +186,7 @@ class OrderCreateView(UserPassesTestMixin, LoginRequiredMixin, CreateView):
             else:
                 messages.error(self.request, f"Problem sending email to {self.request.user.email},"
                                               f""f"please check if you typed it correctly")
+                return redirect("order-detail", order.id)
         else:
             order.status = "оплачен"
             order.save()
@@ -258,7 +285,7 @@ def measurements(request, pk):
             manufactory = form.cleaned_data['manufactory']
             order = Order.objects.get(pk=pk)
             order.manufactory = manufactory
-            if order.cycle == 0:
+            if int(order.cycle) == 0:
                 order.cycle = math.ceil(int(order.mass) / int(lifting_capacity))
                 order.weight_left = order.mass
             order.step = 'загрузка'
@@ -277,7 +304,7 @@ def measurements_approved(request, pk):
         if form.is_valid():
             measured_weight = form.cleaned_data['mass']
             order = Order.objects.get(pk=pk)
-            order.weight_left = int(order.weight_left) - int(measured_weight)
+            order.weight_left = float(order.weight_left) - float(measured_weight)
             order.step = 'охрана-выход'
             order.save()
             messages.success(request, f"Заказ взвешен и подтвержден!")

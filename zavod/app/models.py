@@ -27,7 +27,7 @@ class Order(models.Model):
                                                          ("5-40", "5-40"), ("40-70", "40-70"),
                                                          ('Бутовый камень', "Бутовый камень")],
                                 verbose_name="Фракция щебня", default="0")
-    mass = models.IntegerField(validators=[MinValueValidator(0)], verbose_name="Масса щебня (тонн)")
+    mass = models.FloatField(validators=[MinValueValidator(0)], verbose_name="Масса щебня (тонн)")
     price = models.CharField(max_length=100, default=0)
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
     date_ordered = models.DateTimeField(default=timezone.now)
