@@ -45,7 +45,7 @@
                   {% else %}
                   {% if object.buyer == 'физ.лицо' %}
                   {% else %}
-                  <img src="{{ object.pay_set.first.file.url }}" style="width: 1080px; height: 400px">
+                  <iframe src="{{ object.pay_set.first.file.url }}" style="width:800px; height:800px;" frameborder="0"></iframe>
                   <a href="{% url 'download-check' object.pay_set.first.id %}" class="btn btn-outline-dark" id="eye">Download</a>
                   {% if object.status == 'модерация' %}
                   <a class="btn btn-outline-dark" href="{% url 'activate_order' object.id %}">Подтвердить</a>

@@ -31,11 +31,6 @@ def user_belongs_to_loader_group(user):
     return loader_group in user.groups.all()
 
 
-@login_required
-def home(request):
-    return render(request, "app/profile.html")
-
-
 class LoaderOrderListView(UserPassesTestMixin, ListView):
     model = Order
     template_name = 'app/loader_orders.html'
@@ -97,9 +92,6 @@ class AllOrdersListView(UserPassesTestMixin, ListView):
     context_object_name = "all_orders"
     paginate_by = 2
 
-    def test_func(self):
-        return self.request.user.is_superuser
-
     def get_queryset(self):
         return Order.objects.exclude(status='неоплачено').order_by("-date_ordered")
 
@@ -127,8 +119,10 @@ def verify_email(request):
 
 def pdf_create(order, fraction, price, price_without_nds, price_nds):
     packet = io.BytesIO()
-    can = canvas.Canvas(packet, pagesize=letter)
+    can = canvas.Canvas(packet, pagesize=A4)
     pdfmetrics.registerFont(TTFont('calibri', 'calibri.ttf'))
+    can.setFont("calibri", 12)
+    can.drawString(185, 812, f"Счет на предоплату № {order.id} от {order.date_ordered.strftime("%d.%m.%Y")} г.")
     can.setFont("calibri", 10)
     can.drawString(110, 450, f'{order.user.username}{order.user.iin}, {order.user.address_index}, Республика Казахстан, г.Актобе')
     can.drawString(90, 412, f'{order.user.username} {order.user.iin}')
@@ -197,12 +191,16 @@ class OrderCreateView(UserPassesTestMixin, LoginRequiredMixin, CreateView):
 
 class OrderListView(ListView):
     model = Order
-    template_name = 'app/profile.html'
+    template_name = 'index.html'
     context_object_name = "orders"
     paginate_by = 2
 
     def get_queryset(self):
-        return Order.objects.filter(user=self.request.user).order_by("-date_ordered")
+        user = self.request.user
+        if user.is_superuser:
+            return Order.objects.exclude(status='неоплачено').order_by("-date_ordered")
+        else:
+            return Order.objects.filter(user=self.request.user).order_by("-date_ordered")
 
 
 class UserDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
