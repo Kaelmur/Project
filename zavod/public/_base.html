@@ -10,13 +10,33 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="{% static 'css/tailwind.output.css' %}" />
+<!--TOASTER-->
+    <link rel='stylesheet' type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
+    <link rel='stylesheet' type="text/css" href="./assets/css/styles.css">
+
     <script
       src="https://cdn.jsdelivr.net/gh/alpinejs/alpine@v2.x.x/dist/alpine.min.js"
       defer
     ></script>
     <script src="{% static 'js/init-alpine.js' %}"></script>
+    <script type="text/javascript" src="http://code.jquery.com/jquery-1.9.1.min.js"></script>
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+  <script type="text/javascript" src="script.js"></script>
   </head>
   <body>
+  {% if messages %}
+        {% for message in messages %}
+            {% if message.tags == 'success'%}
+                <script type=text/javascript>toastr.{{ message.tags }}('{{ message }}')</script>
+            {% elif message.tags == 'info' %}
+                <script type=text/javascript>toastr.{{ message.tags }}('{{ message }}')</script>
+            {% elif message.tags == 'warning' %}
+                <script type=text/javascript>toastr.{{ message.tags }}('{{ message }}')</script>
+            {% elif message.tags == 'error' %}
+                <script type=text/javascript>toastr.{{ message.tags }}('{{ message }}')</script>
+            {% endif %}
+        {% endfor %}
+    {% endif %}
     <div
       class="flex h-screen bg-gray-50 dark:bg-gray-900"
       :class="{ 'overflow-hidden': isSideMenuOpen }"
