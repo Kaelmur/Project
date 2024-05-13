@@ -9,22 +9,12 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="./assets/css/tailwind.output.css" />
+    <link rel="stylesheet" href="{% static 'css/tailwind.output.css' %}" />
     <script
       src="https://cdn.jsdelivr.net/gh/alpinejs/alpine@v2.x.x/dist/alpine.min.js"
       defer
     ></script>
-    <script src="./assets/js/init-alpine.js"></script>
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.3/Chart.min.css"
-    />
-    <script
-      src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.3/Chart.min.js"
-      defer
-    ></script>
-    <script src="./assets/js/charts-lines.js" defer></script>
-    <script src="./assets/js/charts-pie.js" defer></script>
+    <script src="{% static 'js/init-alpine.js' %}"></script>
   </head>
   <body>
     <div
@@ -40,17 +30,15 @@
             class="ml-6 text-lg font-bold text-gray-800 dark:text-gray-200"
             href="#"
           >
-            Windmill
+            Завод
           </a>
           <ul class="mt-6">
             <li class="relative px-6 py-3">
-              <span
-                class="absolute inset-y-0 left-0 w-1 bg-purple-600 rounded-tr-lg rounded-br-lg"
-                aria-hidden="true"
-              ></span>
+              {% block custom_span1 %}
+              {% endblock custom_span1 %}
               <a
-                class="inline-flex items-center w-full text-sm font-semibold text-gray-800 transition-colors duration-150 hover:text-gray-800 dark:hover:text-gray-200 dark:text-gray-100"
-                href="index.html"
+                class="inline-flex items-center w-full text-sm font-semibold {% block class_block %}{% endblock class_block %} transition-colors duration-150 hover:text-gray-800 dark:hover:text-gray-200"
+                href="{% url 'profile' %}"
               >
                 <svg
                   class="w-5 h-5"
@@ -66,15 +54,17 @@
                     d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
                   ></path>
                 </svg>
-                <span class="ml-4">Dashboard</span>
+                <span class="ml-4">Главная</span>
               </a>
             </li>
           </ul>
           <ul>
             <li class="relative px-6 py-3">
+              {% block custom_span2 %}
+              {% endblock custom_span2 %}
               <a
-                class="inline-flex items-center w-full text-sm font-semibold transition-colors duration-150 hover:text-gray-800 dark:hover:text-gray-200"
-                href="forms.html"
+                class="inline-flex items-center w-full text-sm font-semibold {% block class_block2 %}{% endblock class_block2 %} transition-colors duration-150 hover:text-gray-800 dark:hover:text-gray-200"
+                href="{% url 'paid-orders' %}"
               >
                 <svg
                   class="w-5 h-5"
@@ -90,7 +80,7 @@
                     d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"
                   ></path>
                 </svg>
-                <span class="ml-4">Forms</span>
+                <span class="ml-4">Оплачены</span>
               </a>
             </li>
             <li class="relative px-6 py-3">
@@ -321,7 +311,7 @@
             class="ml-6 text-lg font-bold text-gray-800 dark:text-gray-200"
             href="#"
           >
-            Windmill
+            Завод
           </a>
           <ul class="mt-6">
             <li class="relative px-6 py-3">
@@ -331,7 +321,7 @@
               ></span>
               <a
                 class="inline-flex items-center w-full text-sm font-semibold text-gray-800 transition-colors duration-150 hover:text-gray-800 dark:hover:text-gray-200 dark:text-gray-100"
-                href="index.html"
+                href="{% url 'profile' %}"
               >
                 <svg
                   class="w-5 h-5"
@@ -347,7 +337,7 @@
                     d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
                   ></path>
                 </svg>
-                <span class="ml-4">Dashboard</span>
+                <span class="ml-4">Главная</span>
               </a>
             </li>
           </ul>
@@ -355,7 +345,7 @@
             <li class="relative px-6 py-3">
               <a
                 class="inline-flex items-center w-full text-sm font-semibold transition-colors duration-150 hover:text-gray-800 dark:hover:text-gray-200"
-                href="forms.html"
+                href="{% url 'paid-orders' %}"
               >
                 <svg
                   class="w-5 h-5"
@@ -598,6 +588,7 @@
               </svg>
             </button>
             <!-- Search input -->
+            {% if user.is_superuser %}
             <div class="flex justify-center flex-1 lg:mr-32">
               <div
                 class="relative w-full max-w-xl mr-6 focus-within:text-purple-500"
@@ -619,11 +610,12 @@
                 <input
                   class="w-full pl-8 pr-2 text-sm text-gray-700 placeholder-gray-600 bg-gray-100 border-0 rounded-md dark:placeholder-gray-500 dark:focus:shadow-outline-gray dark:focus:placeholder-gray-600 dark:bg-gray-700 dark:text-gray-200 focus:placeholder-gray-500 focus:bg-white focus:border-purple-300 focus:outline-none focus:shadow-outline-purple form-input"
                   type="text"
-                  placeholder="Search for projects"
+                  placeholder="Поиск заказа по номеру"
                   aria-label="Search"
                 />
               </div>
             </div>
+            {% endif %}
             <ul class="flex items-center flex-shrink-0 space-x-6">
               <!-- Theme toggler -->
               <li class="flex">

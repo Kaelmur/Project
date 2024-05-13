@@ -75,9 +75,9 @@ class SecurityApproveOrderListView(UserPassesTestMixin, ListView):
 
 class PaidOrderListView(UserPassesTestMixin, ListView):
     model = Order
-    template_name = 'app/paid_orders.html'
+    template_name = 'paid_orders.html'
     context_object_name = 'paid_orders'
-    paginate_by = 2
+    paginate_by = 1
 
     def test_func(self):
         return self.request.user.is_superuser
@@ -91,6 +91,9 @@ class AllOrdersListView(UserPassesTestMixin, ListView):
     template_name = 'app/orders.html'
     context_object_name = "all_orders"
     paginate_by = 2
+
+    def test_func(self):
+        return self.request.user.is_superuser
 
     def get_queryset(self):
         return Order.objects.exclude(status='неоплачено').order_by("-date_ordered")
@@ -201,6 +204,11 @@ class OrderListView(ListView):
             return Order.objects.exclude(status='неоплачено').order_by("-date_ordered")
         else:
             return Order.objects.filter(user=self.request.user).order_by("-date_ordered")
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['total_orders'] = Order.objects.exclude(status='неоплачено').count()
+        return context
 
 
 class UserDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
