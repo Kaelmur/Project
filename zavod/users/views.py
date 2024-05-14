@@ -34,12 +34,12 @@ def login_user(request):
             user = CustomUser.objects.filter(email=email).first()
             if user:
                 send_verification_email(request, user)
-                return redirect("verify_email")
+                return redirect("login")
             else:
-                return render(request, 'users/login.html', {'errors': 'Email not found.', "form": form})
+                return render(request, 'pages/login.html', {"form": form})
     else:
         form = UserLoginForm()
-    return render(request, 'users/login.html', {"form": form})
+    return render(request, 'pages/login.html', {"form": form})
 
 
 def send_verification_email(request, user):
@@ -58,10 +58,9 @@ def send_verification_email(request, user):
     })
     email_send = EmailMessage(mail_subject, message, to=[user.email])
     if email_send.send():
-        messages.success(request, f"Dear {user}, please go to you email {user.email} inbox and click on \
-        received activation link to confirm and complete the registration. Note: Check your spam folder.")
+        messages.success(request, f"На вашу почту было отправлено письмо с ссылкой!")
     else:
-        messages.error(request, f"Problem sending email to {user.email}, please check if you typed it correctly")
+        messages.error(request, f"Возникла проблема при отправке письма.")
 
 
 def verify_email(request, uidb64, token):
@@ -75,7 +74,7 @@ def verify_email(request, uidb64, token):
         user.email_verified = True
         user.save()
         login(request, user)
-        messages.success(request, f"You successfully logged in")
+        messages.success(request, f"Вы успешно вошли!")
         return redirect('profile')
     else:
         return redirect('login')
@@ -93,10 +92,10 @@ def register(request):
             user = CustomUser.objects.create_user(email=email, username=name, iin=iin, address_index=address_index)
             user.is_active = False
             activate_email(request, user, form.cleaned_data.get("email"))
-            return redirect("verify")
+            return redirect("register")
     else:
         form = UserRegisterForm()
-    return render(request, "users/register.html", {"form": form})
+    return render(request, "pages/create-account.html", {"form": form})
 
 
 def activate_email(request, user, to_email):
@@ -111,10 +110,9 @@ def activate_email(request, user, to_email):
     })
     email_send = EmailMessage(mail_subject, message, to=[to_email])
     if email_send.send():
-        messages.success(request, f"Dear <b>{user}</b>, please go to you email <b>{to_email}</b> inbox and click on \
-        received activation link to confirm and complete the registration. <b>Note:</b> Check your spam folder.")
+        messages.success(request, f"На вашу почту было отправлено письмо с регистрирующей ссылкой!")
     else:
-        messages.error(request, f"Problem sending email to {to_email}, please check if you typed it correctly")
+        messages.error(request, f"Возникла проблема при отправке письма.")
 
 
 def activate(request, uidb64, token):
@@ -128,5 +126,5 @@ def activate(request, uidb64, token):
         user.email_verified = True
         user.save()
         login(request, user)
-        messages.success(request, f"Your account {user.username} has been created!")
+        messages.success(request, f"Ваш аккаунт {user.username} успешно создан!")
         return redirect('profile')

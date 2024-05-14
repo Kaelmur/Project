@@ -273,13 +273,22 @@ def loader_order_approved(request, pk):
 
 class UserListView(UserPassesTestMixin, ListView):
     model = CustomUser
-    template_name = "app/users.html"
+    template_name = "users.html"
     context_object_name = "users"
     ordering = ["-id"]
     paginate_by = 2
 
     def test_func(self):
         return self.request.user.is_superuser
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        return queryset.exclude(is_superuser=True)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['total_users'] = CustomUser.objects.exclude(is_superuser=True).count()
+        return context
 
 
 @user_passes_test(lambda u: u.is_superuser)

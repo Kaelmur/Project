@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html :class="{ 'theme-dark': dark }" x-data="data()" lang="en">
   <head>
@@ -8,14 +9,32 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="../assets/css/tailwind.output.css" />
+    <link rel="stylesheet" href="{% static 'css/tailwind.output.css' %}" />
+    <link rel='stylesheet' type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
+    <link rel='stylesheet' type="text/css" href="{% static 'css/styles.css' %}">
     <script
       src="https://cdn.jsdelivr.net/gh/alpinejs/alpine@v2.x.x/dist/alpine.min.js"
       defer
     ></script>
-    <script src="../assets/js/init-alpine.js"></script>
+    <script src="{% static 'js/init-alpine.js' %}"></script>
+    <script type="text/javascript" src="http://code.jquery.com/jquery-1.9.1.min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+    <script type="text/javascript" src="{% static 'js/scripts.js' %}"></script>
   </head>
   <body>
+  {% if messages %}
+        {% for message in messages %}
+            {% if message.tags == 'success'%}
+                <script type=text/javascript>toastr.{{ message.tags }}('{{ message }}')</script>
+            {% elif message.tags == 'info' %}
+                <script type=text/javascript>toastr.{{ message.tags }}('{{ message }}')</script>
+            {% elif message.tags == 'warning' %}
+                <script type=text/javascript>toastr.{{ message.tags }}('{{ message }}')</script>
+            {% elif message.tags == 'error' %}
+                <script type=text/javascript>toastr.{{ message.tags }}('{{ message }}')</script>
+            {% endif %}
+        {% endfor %}
+    {% endif %}
     <div class="flex items-center min-h-screen p-6 bg-gray-50 dark:bg-gray-900">
       <div
         class="flex-1 h-full max-w-xl mx-auto overflow-hidden bg-white rounded-lg shadow-xl dark:bg-gray-800"
@@ -27,48 +46,47 @@
             >
               Зарегистрироваться
             </h1>
-            <label class="block text-sm">
-              <span class="text-gray-700 dark:text-gray-400">ИИН</span>
-              <input
-                class="block w-full mt-1 text-sm dark:border-gray-600 dark:bg-gray-700 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple dark:text-gray-300 dark:focus:shadow-outline-gray form-input"
-                placeholder="000000000000"
-              />
+            <form method="POST">
+            {% csrf_token %}
+              <label class="block mt-4 text-sm">
+              <span class="text-gray-700 dark:text-gray-400">Ф.И.О.</span>
+              {{ form.username }}
             </label>
             <label class="block mt-4 text-sm">
               <span class="text-gray-700 dark:text-gray-400">
                 Адрес эл. почты
               </span>
-              <input
-                class="block w-full mt-1 text-sm dark:border-gray-600 dark:bg-gray-700 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple dark:text-gray-300 dark:focus:shadow-outline-gray form-input"
-                placeholder="fennie.fennicci@cat.com"
-              />
+              {{ form.email }}
+              {% for error in form.email.errors %}
+              <span class="text-red-700">{{ error }}</span>
+              {% endfor %}
             </label>
-            <label class="block mt-4 text-sm">
-              <span class="text-gray-700 dark:text-gray-400">Ф.И.О.</span>
-              <input
-                class="block w-full mt-1 text-sm dark:border-gray-600 dark:bg-gray-700 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple dark:text-gray-300 dark:focus:shadow-outline-gray form-input"
-                placeholder="Фенни Фенниччи"
-              />
+              <label class="block mt-4 text-sm">
+              <span class="text-gray-700 dark:text-gray-400">ИИН</span>
+              {{ form.iin }}
+              {% for error in form.iin.errors %}
+              <span class="text-red-700">{{ error }}</span>
+              {% endfor %}
             </label>
             <label class="block mt-4 text-sm">
               <span class="text-gray-700 dark:text-gray-400">
                 Почтовый индекс
               </span>
-              <input
-                class="block w-full mt-1 text-sm dark:border-gray-600 dark:bg-gray-700 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple dark:text-gray-300 dark:focus:shadow-outline-gray form-input"
-                placeholder="000000"
-              />
+              {{ form.address_index }}
+              {% for error in form.address_index.errors %}
+              <span class="text-red-700">{{ error }}</span>
+              {% endfor %}
             </label>
-            <!-- You should use a button here, as the anchor is only used for the example  -->
             <button
               class="block w-full px-4 py-2 mt-4 text-sm font-medium leading-5 text-center text-white transition-colors duration-150 bg-purple-600 border border-transparent rounded-lg active:bg-purple-600 hover:bg-purple-700 focus:outline-none focus:shadow-outline-purple"
             >
               Подтвердить
             </button>
+            </form>
             <p class="mt-4">
               <a
                 class="text-sm font-medium text-purple-600 dark:text-purple-400 hover:underline"
-                href="./login.html"
+                href="{% url 'login' %}"
               >
                 Уже зарегистрированы? Войти
               </a>
