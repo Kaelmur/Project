@@ -30,33 +30,33 @@
               <br>
               <h3>Машина: {{ object.registration_certificate }}</h3>
               <br>
-                  {% if not user.is_superuser %}
-                  {% if object.status == "неоплачено" %}
-              <form method="POST" enctype='multipart/form-data'>
-                  {% csrf_token %}
-                  <fieldset class="form-group">
-                        {{ form|crispy }}
-                  </fieldset>
-              <div class="form-group">
-              <button class="btn btn-outline-dark" type="submit">Confirm order</button>
-               </div>
-          </form>
-                  {% endif %}
-                  {% else %}
-                  {% if object.buyer == 'физ.лицо' %}
-                  {% else %}
-                  <iframe src="{{ object.pay_set.first.file.url }}" style="width:800px; height:800px;" frameborder="0"></iframe>
-                  <a href="{% url 'download-check' object.pay_set.first.id %}" class="btn btn-outline-dark" id="eye">Download</a>
-                  {% if object.status == 'модерация' %}
-                  <a class="btn btn-outline-dark" href="{% url 'activate_order' object.id %}">Подтвердить</a>
-                  {% endif %}
-                  {% endif %}
-                  {% if object.step == 'весы' %}
-                  <a class="btn btn-outline-dark" href="{% url 'order-measurements' object.id %}">Подтверждение</a>
-                  {% elif object.step == 'весы-подтверждение' %}
-                  <a class="btn btn-outline-dark" href="{% url 'order-approve-mesurements' object.id %}">Подтвердить загрузку</a>
-                  {% endif %}
-                  {% endif %}
+                      {% if not user.is_superuser %}
+                      {% if object.status == "неоплачено" %}
+                  <form method="POST" enctype='multipart/form-data'>
+                      {% csrf_token %}
+                      <fieldset class="form-group">
+                            {{ form|crispy }}
+                      </fieldset>
+                  <div class="form-group">
+                  <button class="btn btn-outline-dark" type="submit">Confirm order</button>
+                  </div>
+              </form>
+                      {% endif %}
+                      {% else %}
+                      {% if object.buyer == 'физ.лицо' %}
+                      {% else %}
+                      <iframe src="{{ object.pay_set.first.file.url }}" style="width:800px; height:800px;" frameborder="0"></iframe>
+                      <a href="{% url 'download-check' object.pay_set.first.id %}" class="btn btn-outline-dark" id="eye">Download</a>
+                      {% if object.status == 'модерация' %}
+                      <a class="btn btn-outline-dark" href="{% url 'activate_order' object.id %}">Подтвердить</a>
+                      {% endif %}
+                      {% endif %}
+                      {% if object.step == 'весы' %}
+                      <a class="btn btn-outline-dark" href="{% url 'order-measurements' object.id %}">Подтверждение</a>
+                      {% elif object.step == 'весы-подтверждение' %}
+                      <a class="btn btn-outline-dark" href="{% url 'order-approve-mesurements' object.id %}">Подтвердить загрузку</a>
+                      {% endif %}
+                      {% endif %}
 
     </div>
   </div>

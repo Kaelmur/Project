@@ -5,7 +5,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin, 
 from users.models import UserManage as CustomUser
 from django.contrib.auth.models import Group
 from .models import Order, Pay, FractionPrice
-from .forms import PayForm, MeasureForm, MeasureApprovedForm, FractionPriceForm
+from .forms import PayForm, MeasureForm, MeasureApprovedForm, FractionPriceForm, OrderForm
 from django.http import FileResponse
 from django.contrib import messages
 from django.core.mail import EmailMessage
@@ -61,7 +61,7 @@ class SecurityOrderListView(UserPassesTestMixin, ListView):
 
 class SecurityApproveOrderListView(UserPassesTestMixin, ListView):
     model = Order
-    template_name = 'app/security_approve_orders.html'
+    template_name = 'pages/security_approve_orders.html'
     context_object_name = 'security_approve_orders'
     paginate_by = 2
 
@@ -154,7 +154,8 @@ def pdf_create(order, fraction, price, price_without_nds, price_nds):
 
 class OrderCreateView(UserPassesTestMixin, LoginRequiredMixin, CreateView):
     model = Order
-    fields = ["registration_certificate", "fraction", "mass", 'buyer']
+    form_class = OrderForm
+    template_name = 'new-order.html'
     success_url = "/"
 
     def test_func(self):
@@ -202,12 +203,17 @@ class OrderListView(ListView):
         user = self.request.user
         if user.is_superuser:
             return Order.objects.exclude(status='неоплачено').order_by("-date_ordered")
+        elif user_belongs_to_security_group(user):
+            return Order.objects.filter(Q(status='оплачен') | Q(status='выехал')).order_by("-date_ordered")
+        elif user_belongs_to_loader_group(user):
+            return Order.objects.filter(step='загрузка').order_by("-date_ordered")
         else:
             return Order.objects.filter(user=self.request.user).order_by("-date_ordered")
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['total_orders'] = Order.objects.exclude(status='неоплачено').count()
+        context['user_total_orders'] = Order.objects.filter(user=self.request.user).count()
         return context
 
 
@@ -216,11 +222,12 @@ class UserDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
     template_name = 'users/user_detail.html'
 
     def test_func(self):
-        return self.request.user.is_superuser
+        return self.request.user.is_superuser or user_belongs_to_security_group(self.request.user)
 
 
 class OrderDetailView(UserPassesTestMixin, DetailView):
     model = Order
+    template_name = 'order-detail.html'
 
     def test_func(self):
         order = self.get_object()
@@ -241,6 +248,9 @@ class OrderDetailView(UserPassesTestMixin, DetailView):
             order.save()
             messages.success(self.request, 'Чек принят. Ждите подтверждения')
             return redirect(request.path_info)
+        else:
+            messages.error(self.request, "Неверный формат файла.")
+            return redirect(request.path_info)
 
 
 @user_passes_test(lambda u: u.is_superuser)
@@ -259,7 +269,7 @@ def security_order_approved(request, pk):
     order.step = 'весы'
     order.save()
     messages.success(request, f"Заказ подтвержден")
-    return redirect('security_orders')
+    return redirect('profile')
 
 
 @user_passes_test(lambda u: u.groups.filter(name='loader').exists())
@@ -279,7 +289,7 @@ class UserListView(UserPassesTestMixin, ListView):
     paginate_by = 2
 
     def test_func(self):
-        return self.request.user.is_superuser
+        return self.request.user.is_superuser or user_belongs_to_security_group(self.request.user)
 
     def get_queryset(self):
         queryset = super().get_queryset()

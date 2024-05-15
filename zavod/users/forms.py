@@ -2,7 +2,6 @@ from django import forms
 from .models import UserManage
 from django.contrib.auth.models import Group
 from django.contrib.auth.forms import AuthenticationForm
-from django.contrib.auth import authenticate
 
 
 class CustomAuthenticationForm(AuthenticationForm):

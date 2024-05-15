@@ -1,30 +1,43 @@
+{% load static %}
 <!DOCTYPE html>
 <html :class="{ 'theme-dark': dark }" x-data="data()" lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Base</title>
+    <title>{% block title %}{% endblock %}</title>
     <link
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="./assets/css/tailwind.output.css" />
+   <link rel="stylesheet" href="{% static 'css/tailwind.output.css' %}" />
+<!--TOASTER-->
+    <link rel='stylesheet' type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
+    <link rel='stylesheet' type="text/css" href="{% static 'css/styles.css' %}">
+
     <script
       src="https://cdn.jsdelivr.net/gh/alpinejs/alpine@v2.x.x/dist/alpine.min.js"
       defer
     ></script>
-    <script src="./assets/js/init-alpine.js"></script>
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.3/Chart.min.css"
-    />
-    <script
-      src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.3/Chart.min.js"
-      defer
-    ></script>
-    <script src="./assets/js/focus-trap.js" defer></script>
+    <script src="{% static 'js/init-alpine.js' %}"></script>
+    <script type="text/javascript" src="http://code.jquery.com/jquery-1.9.1.min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+    <script type="text/javascript" src="{% static 'js/scripts.js' %}"></script>
+    <script src=".{% static 'js/focus-trap.js' %}" defer></script>
   </head>
   <body>
+  {% if messages %}
+        {% for message in messages %}
+            {% if message.tags == 'success'%}
+                <script type=text/javascript>toastr.{{ message.tags }}('{{ message }}')</script>
+            {% elif message.tags == 'info' %}
+                <script type=text/javascript>toastr.{{ message.tags }}('{{ message }}')</script>
+            {% elif message.tags == 'warning' %}
+                <script type=text/javascript>toastr.{{ message.tags }}('{{ message }}')</script>
+            {% elif message.tags == 'error' %}
+                <script type=text/javascript>toastr.{{ message.tags }}('{{ message }}')</script>
+            {% endif %}
+        {% endfor %}
+    {% endif %}
     <div
       class="flex h-screen bg-gray-50 dark:bg-gray-900"
       :class="{ 'overflow-hidden': isSideMenuOpen }"
@@ -109,6 +122,12 @@
             </ul>
           </div>
         </header>
+{% block content %}
+{% endblock %}
+    </div>
+    </div>
+  </body>
+</html>
         <!-- Dashboard -->
         <main class="h-full overflow-y-auto">
           <div class="container px-6 mx-auto grid">
@@ -356,7 +375,4 @@
             </div>
           </div>
         </main>
-      </div>
-    </div>
-  </body>
-</html>
+
