@@ -60,7 +60,7 @@ text-gray-800 dark:text-gray-100
                   <p
                     class="mb-2 text-sm font-medium text-gray-600 dark:text-gray-400"
                   >
-                    Заказов
+                    Всего заказов
                   </p>
                   <p
                     class="text-lg font-semibold text-gray-700 dark:text-gray-200"
@@ -120,7 +120,7 @@ text-gray-800 dark:text-gray-100
                         </span>
                         {% elif order.status == 'модерация' %}
                         <span
-                          class="px-2 py-1 font-semibold leading-tight text-yellow-700 bg-yellow-100 rounded-full dark:bg-teal-700 dark:text-teal-100"
+                          class="px-2 py-1 font-semibold leading-tight text-blue-100 bg-blue-600 rounded-full dark:bg-blue-600 dark:text-blue-100"
                         >
                           {{ order.status }}
                         </span>
@@ -539,7 +539,7 @@ text-gray-800 dark:text-gray-100
                         </span>
                         {% endif %}
                       </td>
-                      <td class="px-4 py-3 text-sm">
+                      <td class="px-4 py-3 text-sm text-purple-600">
                         <a href="{% url 'security_approved' order.id %}">Подтвердить</a>
                       </td>
                     </tr>
