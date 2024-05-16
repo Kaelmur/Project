@@ -390,8 +390,8 @@ def security_order_exit_approved(request, pk):
     order.cycle = int(order.cycle) - 1
     order.cycles_left = int(order.cycles_left) + 1
     if int(order.cycle) <= 0:
-        order.step = 'закончен'
-        order.status = 'закончен'
+        order.step = 'завершен'
+        order.status = 'завершен'
     order.save()
     messages.success(request, f"Выезд зазачика подтвержден")
     return redirect('security_approve_orders')
