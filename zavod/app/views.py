@@ -1,18 +1,17 @@
-from django.shortcuts import render, redirect, get_object_or_404, Http404
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.views.generic import ListView, DetailView, CreateView, DeleteView
-from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin, PermissionRequiredMixin
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from users.models import UserManage as CustomUser
 from django.contrib.auth.models import Group
 from .models import Order, Pay, FractionPrice
-from .forms import PayForm, MeasureForm, MeasureApprovedForm, FractionPriceForm, OrderForm
+from .forms import PayForm, MeasureForm, MeasureApprovedForm, FractionPriceForm, OrderForm, SearchForm
 from django.http import FileResponse
 from django.contrib import messages
 from django.core.mail import EmailMessage
 from reportlab.lib.pagesizes import A4
 from PyPDF2 import PdfWriter, PdfReader
 from reportlab.pdfgen import canvas
-from reportlab.lib.pagesizes import letter
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from django.db.models import Q
@@ -77,13 +76,22 @@ class PaidOrderListView(UserPassesTestMixin, ListView):
     model = Order
     template_name = 'paid_orders.html'
     context_object_name = 'paid_orders'
-    paginate_by = 1
+    paginate_by = 5
 
     def test_func(self):
         return self.request.user.is_superuser
 
     def get_queryset(self):
-        return Order.objects.filter(status='модерация').order_by("-date_ordered")
+        search_query = self.request.GET.get('query')
+        queryset = Order.objects.filter(status='модерация').order_by("-date_ordered")
+        if search_query:
+            queryset = Order.objects.filter(Q(status='модерация') & Q(id__icontains=search_query))
+        return queryset
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['search_form'] = SearchForm(self.request.GET)
+        return context
 
 
 class AllOrdersListView(UserPassesTestMixin, ListView):
@@ -180,7 +188,7 @@ class OrderCreateView(UserPassesTestMixin, LoginRequiredMixin, CreateView):
                                                                            'application/pdf')],
                                       to=[self.request.user.email])
             if email_send.send():
-                messages.success(self.request, 'Order created, paycheck send to your email!')
+                messages.success(self.request, 'Заказ создан, счет на предоплату отправлен вам на почту!')
             else:
                 messages.error(self.request, f"Problem sending email to {self.request.user.email},"
                                               f""f"please check if you typed it correctly")
@@ -201,8 +209,13 @@ class OrderListView(ListView):
 
     def get_queryset(self):
         user = self.request.user
+        search_query = self.request.GET.get('query')
+
         if user.is_superuser:
-            return Order.objects.exclude(status='неоплачено').order_by("-date_ordered")
+            queryset = Order.objects.exclude(status='неоплачено').order_by("-date_ordered")
+            if search_query:
+                queryset = queryset.filter(id__icontains=search_query)
+            return queryset
         elif user_belongs_to_security_group(user):
             return Order.objects.filter(Q(status='оплачен') | Q(status='выехал')).order_by("-date_ordered")
         elif user_belongs_to_loader_group(user):
@@ -214,12 +227,13 @@ class OrderListView(ListView):
         context = super().get_context_data(**kwargs)
         context['total_orders'] = Order.objects.exclude(status='неоплачено').count()
         context['user_total_orders'] = Order.objects.filter(user=self.request.user).count()
+        context['search_form'] = SearchForm(self.request.GET)
         return context
 
 
 class UserDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
     model = CustomUser
-    template_name = 'users/user_detail.html'
+    template_name = 'pages/user_detail.html'
 
     def test_func(self):
         return self.request.user.is_superuser or user_belongs_to_security_group(self.request.user)
@@ -258,7 +272,7 @@ def activate_order(request, pk):
     order = Order.objects.get(pk=pk)
     order.status = "оплачен"
     order.save()
-    messages.success(request, f"Order activated")
+    messages.success(request, f"Заказ активирован")
     return redirect("order-detail", order.id)
 
 
@@ -278,7 +292,7 @@ def loader_order_approved(request, pk):
     order.step = 'весы-подтверждение'
     order.save()
     messages.success(request, f"Загрузка подтверждена")
-    return redirect('loader_orders')
+    return redirect('profile')
 
 
 class UserListView(UserPassesTestMixin, ListView):
@@ -286,18 +300,25 @@ class UserListView(UserPassesTestMixin, ListView):
     template_name = "users.html"
     context_object_name = "users"
     ordering = ["-id"]
-    paginate_by = 2
+    paginate_by = 5
 
     def test_func(self):
         return self.request.user.is_superuser or user_belongs_to_security_group(self.request.user)
 
     def get_queryset(self):
         queryset = super().get_queryset()
+        search_query = self.request.GET.get('query')
+
+        if self.request.user.is_superuser:
+            if search_query:
+                queryset = CustomUser.objects.filter(username__icontains=search_query)
+            return queryset.exclude(is_superuser=True)
         return queryset.exclude(is_superuser=True)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['total_users'] = CustomUser.objects.exclude(is_superuser=True).count()
+        context['search_form'] = SearchForm(self.request.GET)
         return context
 
 
@@ -313,13 +334,14 @@ def measurements(request, pk):
             if int(order.cycle) == 0:
                 order.cycle = math.ceil(int(order.mass) / int(lifting_capacity))
                 order.weight_left = order.mass
+                order.cycle_total = math.ceil(int(order.mass) / int(lifting_capacity))
             order.step = 'загрузка'
             order.save()
             messages.success(request, f"Заказ взвешен и подтвержден!")
             return redirect("order-detail", order.id)
     else:
         form = MeasureForm()
-    return render(request, 'app/order_measurements.html', {'form': form})
+    return render(request, 'order_measurements.html', {'form': form})
 
 
 @user_passes_test(lambda u: u.is_superuser)
@@ -333,10 +355,10 @@ def measurements_approved(request, pk):
             order.step = 'охрана-выход'
             order.save()
             messages.success(request, f"Заказ взвешен и подтвержден!")
-            return redirect('orders')
+            return redirect('profile')
     else:
         form = MeasureApprovedForm()
-    return render(request, 'app/order_approved_measurements.html', {'form': form})
+    return render(request, 'order_approved_measurements.html', {'form': form})
 
 
 @user_passes_test(lambda u: u.is_superuser)
@@ -357,7 +379,7 @@ def fraction_price(request):
             return redirect('profile')
     else:
         form = FractionPriceForm()
-    return render(request, "app/fraction_price.html", {"form": form})
+    return render(request, "fraction_price.html", {"form": form})
 
 
 @user_passes_test(lambda u: u.groups.filter(name='security').exists())
@@ -366,6 +388,7 @@ def security_order_exit_approved(request, pk):
     order.status = 'выехал'
     order.step = 'охрана'
     order.cycle = int(order.cycle) - 1
+    order.cycles_left = int(order.cycles_left) + 1
     if int(order.cycle) <= 0:
         order.step = 'закончен'
         order.status = 'закончен'

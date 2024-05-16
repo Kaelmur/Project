@@ -19,11 +19,11 @@ def change_role(request, pk):
             user = CustomUser.objects.get(pk=pk)
             group = form.cleaned_data["role"]
             user.groups.add(group)
-            messages.success(request, f"{user}'s role changed to {group}")
+            messages.success(request, f"Роль {user.username} изменена на {group}")
             return redirect('user-detail', pk=user.id)
     else:
         form = UserChangeRoleForm()
-    return render(request, 'users/add_role_to_user.html', {'form': form})
+    return render(request, 'add_role_to_user.html', {'form': form})
 
 
 def login_user(request):

@@ -1,0 +1,50 @@
+{% extends '_base.html' %}
+{% load static %}
+{% block title %}Детали пользователя{% endblock %}
+{% block content %}
+  <script src="{% static 'js/focus-trap.js' %}" defer></script>
+<!--Div bg-gray colored-->
+    <div class="flex flex-col flex-1 w-full bg-gray-50 dark:bg-gray-900">
+      <main class="h-full pb-16 overflow-y-auto">
+          <div class="container grid px-6 mx-auto">
+            <h2
+              class="my-6 text-2xl font-semibold text-gray-700 dark:text-gray-200"
+            >
+              {{ object.username }}'s Details
+            </h2>
+            <!-- Details -->
+              <div class="grid md:grid-cols-2 gap-6">
+            <div
+              class="max-w-2xl px-4 py-3 bg-white rounded-lg shadow-md dark:bg-gray-800"
+            >
+              <p class="mb-4 text-gray-600 dark:text-gray-400">
+                Имя: {{ object.username }}
+              </p>
+
+              <p class="mb-4 text-gray-600 dark:text-gray-400">
+                Почта: {{ object.email }}
+              </p>
+
+              <p class="mb-4 text-gray-600 dark:text-gray-400">
+                ИИН: {{ object.iin }}
+              </p>
+
+              <p class="mb-4 text-gray-600 dark:text-gray-400">
+                Почтовый индекс: {{ object.address_index }}
+              </p>
+                {% for group in object.groups.all %}
+                <p class="mb-4 text-gray-600 dark:text-gray-400">
+                        Роль: {{ group }}
+              </p>
+                {% endfor %}
+                <p class="mb-4 text-gray-600 dark:text-gray-400">
+                    Верифицирован: {{ object.email_verified }}
+              </p>
+            </div>
+              </div>
+              <a class='mt-4' href="{% url 'change-role' object.id %}"><button class="px-4 py-2 text-sm font-medium leading-5 text-white transition-colors duration-150 bg-purple-600 border border-transparent rounded-lg active:bg-purple-600 hover:bg-purple-700 focus:outline-none focus:shadow-outline-purple">Изменить роль</button></a>
+
+          </div>
+      </main>
+        </div>
+{% endblock %}

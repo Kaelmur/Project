@@ -56,4 +56,8 @@ class UserChangeRoleForm(forms.ModelForm):
 
     class Meta:
         model = UserManage
-        fields = ("role",)
+        fields = ["role"]
+
+    def __init__(self, *args, **kwargs):
+        super(UserChangeRoleForm, self).__init__(*args, **kwargs)
+        self.fields['role'].widget.attrs.update({'class': 'block w-full mt-1 text-sm dark:border-gray-600 dark:bg-gray-700 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple dark:text-gray-300 dark:focus:shadow-outline-gray form-input', 'placeholder': 'Имя Фамилия'})

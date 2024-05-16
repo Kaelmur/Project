@@ -10,8 +10,8 @@ class FractionPrice(models.Model):
         ("0-5", "0-5"), ("5-20", "5-20"), ("20-40", "20-40"),
         ("5-40", "5-40"), ("40-70", "40-70"),
         ('Бутовый камень', "Бутовый камень")
-    ], verbose_name="Фракция щебня")
-    price = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name="Цена, т")
+    ])
+    price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
 
 
 class Order(models.Model):
@@ -37,6 +37,8 @@ class Order(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='неоплачено')
     step = models.CharField(max_length=20, default='охрана')
     cycle = models.CharField(max_length=20, default=0)
+    cycle_total = models.CharField(max_length=20, default=1)
+    cycles_left = models.CharField(max_length=20, default=1)
     fraction_price = models.ForeignKey(FractionPrice, on_delete=models.SET_NULL, null=True)
 
 
