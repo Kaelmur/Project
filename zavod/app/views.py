@@ -6,7 +6,7 @@ from users.models import UserManage as CustomUser
 from django.contrib.auth.models import Group
 from .models import Order, Pay, FractionPrice
 from .forms import PayForm, MeasureForm, MeasureApprovedForm, FractionPriceForm, OrderForm, SearchForm
-from django.http import FileResponse
+from django.http import FileResponse, JsonResponse
 from django.contrib import messages
 from django.core.mail import EmailMessage
 from reportlab.lib.pagesizes import A4
@@ -15,9 +15,11 @@ from reportlab.pdfgen import canvas
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from django.db.models import Q
+import json
 import io
 import os
 import math
+from datetime import datetime
 
 
 def user_belongs_to_security_group(user):
@@ -225,6 +227,18 @@ class OrderListView(ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        all_orders = Order.objects.all()
+        bought_orders = Order.objects.exclude(status='неоплачено')
+        bought_data = [
+            {key: value.strftime("%Y-%m-%d %H:%M:%S") for key, value in order.items() if key == 'date_ordered'}
+            for order in bought_orders.values()
+        ]
+        orders_data = [
+            {key: value for key, value in order.items() if key == 'fraction'}
+            for order in all_orders.values()
+        ]
+        context['bought_data'] = json.dumps(bought_data)
+        context['orders_data'] = json.dumps(orders_data)
         context['total_orders'] = Order.objects.exclude(status='неоплачено').count()
         context['user_total_orders'] = Order.objects.filter(user=self.request.user).count()
         context['search_form'] = SearchForm(self.request.GET)
@@ -311,7 +325,7 @@ class UserListView(UserPassesTestMixin, ListView):
 
         if self.request.user.is_superuser:
             if search_query:
-                queryset = CustomUser.objects.filter(username__icontains=search_query)
+                queryset = CustomUser.objects.filter(Q(username__icontains=search_query) | Q(id__icontains=search_query))
             return queryset.exclude(is_superuser=True)
         return queryset.exclude(is_superuser=True)
 

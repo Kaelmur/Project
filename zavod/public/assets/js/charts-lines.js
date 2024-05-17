@@ -1,22 +1,42 @@
-/**
- * For usage, visit Chart.js docs https://www.chartjs.org/docs/latest/
- */
+const monthNames = [
+  'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
+  'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'
+];
+const currentMonth = new Date().getMonth()
+
+const getWrappedMonthIndex = (monthIndex) => {
+  if (monthIndex < 0) {
+    return 12 + monthIndex; // Wrap around to December if monthIndex is negative
+  }
+  return monthIndex % 12; // Wrap around to January if monthIndex is greater than 11
+};
+
+const boughtDataArray = Object.values(boughtData);
+
+
+
+function countOrdersPerMonth(data) {
+
+  const monthCounts = Array(12).fill(0);
+
+  data.forEach(item => {
+    const date = new Date(item.date_ordered);
+    const month = date.getMonth() - 1;
+
+    monthCounts[month]++;
+  });
+
+  return monthCounts;
+}
+
+const ordersPerMonth = countOrdersPerMonth(boughtData);
+
+
 const lineConfig = {
   type: 'line',
   data: {
-    labels: ['January', 'February', 'March', 'April', 'May', 'June', 'July'],
+    labels: [],
     datasets: [
-      {
-        label: 'Organic',
-        /**
-         * These colors come from Tailwind CSS palette
-         * https://tailwindcss.com/docs/customizing-colors/#default-color-palette
-         */
-        backgroundColor: '#0694a2',
-        borderColor: '#0694a2',
-        data: [43, 48, 40, 54, 67, 73, 70],
-        fill: false,
-      },
       {
         label: 'Paid',
         fill: false,
@@ -26,7 +46,7 @@ const lineConfig = {
          */
         backgroundColor: '#7e3af2',
         borderColor: '#7e3af2',
-        data: [24, 50, 64, 74, 52, 51, 65],
+        data: [],
       },
     ],
   },
@@ -66,6 +86,17 @@ const lineConfig = {
   },
 }
 
-// change this to the id of your chart element in HMTL
+for (let i = -3; i <= 3; i++) {
+  const monthIndex = getWrappedMonthIndex(currentMonth + i);
+  lineConfig.data.labels.push(monthNames[monthIndex]);
+}
+
+function addDataToLineChart(newData) {
+
+  lineConfig.data.datasets[0].data.push(newData);
+
+  window.myLine.update();
+}
+lineConfig.data.datasets[0].data = ordersPerMonth;
 const lineCtx = document.getElementById('line')
 window.myLine = new Chart(lineCtx, lineConfig)
