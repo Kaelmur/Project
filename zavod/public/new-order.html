@@ -1,6 +1,12 @@
 {% extends '_base.html' %}
+{% load static %}
 {% block title %}Заказать{% endblock %}
 {% block content %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<link rel="stylesheet" type="text/css" href="https://npmcdn.com/flatpickr/dist/themes/dark.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://npmcdn.com/flatpickr/dist/flatpickr.min.js"></script>
+<script src="https://npmcdn.com/flatpickr/dist/l10n/ru.js"></script>
         <main class="h-full overflow-y-auto">
             <div class="flex items-center min-h-screen p-6 bg-gray-50 dark:bg-gray-900">
                 <div
@@ -36,6 +42,15 @@
                         <span class="text-red-700">{{ error }}</span>
                        {% endfor %}
                       </label>
+                          <label class="block mt-4 text-sm">
+                        <span class="text-gray-700 dark:text-gray-400">
+                          Бронирование
+                        </span>
+                        {{ form.date_reserved }}
+                       {% for error in form.date_reserved.errors %}
+                        <span class="text-red-700">{{ error }}</span>
+                       {% endfor %}
+                      </label>
                          <label class="block mt-4 text-sm">
                         <span class="text-gray-700 dark:text-gray-400">
                           Покупатель
@@ -49,6 +64,20 @@
                         Подтвердить
                       </button>
                    </form>
+        <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            flatpickr('#id_date_reserved', {
+                enableTime: true,
+                dateFormat: 'Y-m-d H:i',
+                altInput: true,
+                altFormat: 'Y-m-d H:i',
+                time_24hr: true,
+                theme: 'dark',
+                "locale": "ru"
+
+            });
+        });
+        </script>
                     </div>
                   </div>
                 </div>

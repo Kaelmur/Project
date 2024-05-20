@@ -15,6 +15,7 @@ from reportlab.pdfgen import canvas
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from django.db.models import Q
+from django.utils import timezone
 import json
 import io
 import os
@@ -176,6 +177,9 @@ class OrderCreateView(UserPassesTestMixin, LoginRequiredMixin, CreateView):
         mass = form.cleaned_data['mass']
         buyer = form.cleaned_data['buyer']
         fraction = form.cleaned_data['fraction']
+        date_reserved = form.cleaned_data['date_reserved']
+        local_time = timezone.localtime(date_reserved)
+        form.instance.date_reserved = local_time
         fractions_price = FractionPrice.objects.get(fraction=fraction)
         price_without_nds = mass * float(fractions_price.price)
         price_nds = (mass * float(fractions_price.price)) * 0.12
@@ -242,6 +246,7 @@ class OrderListView(ListView):
         context['total_orders'] = Order.objects.exclude(status='неоплачено').count()
         context['user_total_orders'] = Order.objects.filter(user=self.request.user).count()
         context['search_form'] = SearchForm(self.request.GET)
+        context['local'] = timezone.now()
         return context
 
 

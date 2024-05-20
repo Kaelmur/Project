@@ -1,13 +1,21 @@
 from django import forms
 from .models import Order, Pay, FractionPrice
+from django_flatpickr.widgets import DateTimePickerInput
+from django_flatpickr.schemas import FlatpickrOptions
 import os
+from django.conf import settings
+from django.utils import timezone
 
 
 class OrderForm(forms.ModelForm):
 
     class Meta:
         model = Order
-        fields = ["registration_certificate", "fraction", "mass", 'buyer']
+        fields = ["registration_certificate", "fraction", "mass", 'date_reserved', 'buyer']
+        widgets = {
+            'date_reserved': DateTimePickerInput(attrs={'id': 'id_date_reserved', 'class': 'block w-full mt-1 text-sm dark:border-gray-600 dark:bg-gray-700 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple dark:text-gray-300 dark:focus:shadow-outline-gray form-input',
+                                                        'placeholder': 'Выберите дату и время'})
+        }
 
     def __init__(self, *args, **kwargs):
         super(OrderForm, self).__init__(*args, **kwargs)
@@ -19,8 +27,12 @@ class OrderForm(forms.ModelForm):
     def clean(self):
         super(OrderForm, self).clean()
         mass = self.cleaned_data.get('mass')
+        reserved = self.cleaned_data.get('date_reserved')
+        current_time = timezone.now()
         if mass <= 0:
             self._errors['mass'] = self.error_class(['Введите верные данные'])
+        if reserved is not None and reserved < current_time:
+            self._errors['date_reserved'] = self.error_class(['Введите верные данные'])
         return self.cleaned_data
 
 

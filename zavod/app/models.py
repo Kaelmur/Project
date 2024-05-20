@@ -31,6 +31,7 @@ class Order(models.Model):
     price = models.CharField(max_length=100, default=0)
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
     date_ordered = models.DateTimeField(default=timezone.now)
+    date_reserved = models.DateTimeField(default=timezone.now)
     manufactory = models.CharField(max_length=20, choices=MANUFACTORY_CHOICES, default='Не указано')
     buyer = models.CharField(max_length=20, choices=BUYER_CHOICES, default='физ.лицо')
     weight_left = models.IntegerField(default=0)
