@@ -28,11 +28,15 @@ class OrderForm(forms.ModelForm):
         super(OrderForm, self).clean()
         mass = self.cleaned_data.get('mass')
         reserved = self.cleaned_data.get('date_reserved')
-        current_time = timezone.now()
         if mass <= 0:
             self._errors['mass'] = self.error_class(['Введите верные данные'])
-        if reserved is not None and reserved < current_time:
-            self._errors['date_reserved'] = self.error_class(['Введите верные данные'])
+        if reserved:
+            reservations_in_hour = Order.objects.filter(date_reserved__year=reserved.year,
+                                                        date_reserved__month=reserved.month,
+                                                        date_reserved__day=reserved.day,
+                                                        date_reserved__hour=reserved.hour)
+            if reservations_in_hour.exists():
+                self._errors['date_reserved'] = self.error_class(['Этот час уже зарезервирован!'])
         return self.cleaned_data
 
 

@@ -206,6 +206,16 @@ class OrderCreateView(UserPassesTestMixin, LoginRequiredMixin, CreateView):
             return redirect("order-detail", order.id)
         return response
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        orders = Order.objects.all()
+        reserved_slots = [
+            order.date_reserved.strftime('%Y-%m-%d %H:%M:%S')
+            for order in orders
+        ]
+        context['reserved_slots'] = reserved_slots
+        return context
+
 
 class OrderListView(ListView):
     model = Order
