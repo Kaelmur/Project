@@ -19,7 +19,8 @@ urlpatterns = [
     path("activate-order/<int:pk>", app_views.activate_order, name="activate_order"),
     path('activate-security-order/<int:pk>', app_views.security_order_approved, name='security_approved'),
     path('activate-loader-order/<int:pk>', app_views.loader_order_approved, name='loader_approved'),
-    path('moderator/login/', auth_views.LoginView.as_view(redirect_authenticated_user=True, authentication_form=CustomAuthenticationForm,
+    path('moderator/login/', auth_views.LoginView.as_view(redirect_authenticated_user=True,
+                                                          authentication_form=CustomAuthenticationForm,
                                                           template_name='pages/admin_login.html'), name='admin_login'),
     path('user-role-change/<int:pk>', user_views.change_role, name='change-role')
 ]

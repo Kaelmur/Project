@@ -1,7 +1,7 @@
 from django.urls import path
 from app import views
 from .views import (OrderCreateView, OrderListView, OrderDetailView, UserListView, PaidOrderListView,
-                    UserDetailView, SecurityOrderListView, LoaderOrderListView, SecurityApproveOrderListView)
+                    UserDetailView, SecurityApproveOrderListView)
 from django.contrib.auth.decorators import login_required
 from django.conf import settings
 from django.conf.urls.static import static
@@ -22,12 +22,8 @@ def guest_required(view_func):
 urlpatterns = [
     path("", login_required(OrderListView.as_view()), name="profile"),
     path('paid_orders/', PaidOrderListView.as_view(), name='paid-orders'),
-    path('security_orders/', SecurityOrderListView.as_view(), name='security_orders'),
     path('security_approve_orders/', SecurityApproveOrderListView.as_view(), name='security_approve_orders'),
     path('security_order_exit_approve/<int:pk>', views.security_order_exit_approved, name='security-exit'),
-    path('loader_orders/', LoaderOrderListView.as_view(), name='loader_orders'),
-    path("verify/", guest_required(views.verify), name="verify"),
-    path("verify_email/", guest_required(views.verify_email), name="verify_email"),
     path("order", OrderCreateView.as_view(), name="order"),
     path("order/<int:pk>/", OrderDetailView.as_view(), name="order-detail"),
     path('order_measurements/<int:pk>', views.measurements, name='order-measurements'),

@@ -7,6 +7,7 @@
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script src="https://npmcdn.com/flatpickr/dist/flatpickr.min.js"></script>
 <script src="https://npmcdn.com/flatpickr/dist/l10n/ru.js"></script>
+<script src="{% static 'js/flatpickr-settings.js' %}"></script>
         <main class="h-full overflow-y-auto">
             <div class="flex items-center min-h-screen p-6 bg-gray-50 dark:bg-gray-900">
                 <div
@@ -64,20 +65,6 @@
                         Подтвердить
                       </button>
                    </form>
-        <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            flatpickr('#id_date_reserved', {
-                enableTime: true,
-                dateFormat: 'Y-m-d H:i',
-                altInput: true,
-                altFormat: 'Y-m-d H:i',
-                time_24hr: true,
-                minDate: "today",
-                theme: 'dark',
-                "locale": "ru"
-            });
-        });
-        </script>
                     </div>
                   </div>
                 </div>

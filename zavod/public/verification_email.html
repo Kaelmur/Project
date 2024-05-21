@@ -1,0 +1,8 @@
+{% autoescape off %}
+
+Здраствуйте {{ user.username }}!
+
+Перейдите по ссылке снизу чтобы войти:
+
+http://{{ domain }}{% url 'verify_email' uidb64=uid token=token %}
+{% endautoescape %}

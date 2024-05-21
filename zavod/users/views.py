@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth import login
-from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib.auth.decorators import user_passes_test
 from .forms import UserRegisterForm, UserLoginForm, UserChangeRoleForm
 from django.contrib import messages
 from django.contrib.auth.tokens import default_token_generator
@@ -49,7 +49,7 @@ def send_verification_email(request, user):
     protocol = 'https' if request.is_secure() else 'http'
     current_site = get_current_site(request)
     domain = current_site.domain
-    message = render_to_string('users/verification_email.html', {
+    message = render_to_string('verification_email.html', {
         'user': user,
         'domain': domain,
         'uid': uid,
@@ -101,7 +101,7 @@ def register(request):
 def activate_email(request, user, to_email):
     token = default_token_generator.make_token(user)
     mail_subject = "Verify your email"
-    message = render_to_string("users/template_activate_email.html", {
+    message = render_to_string("template_activate_email.html", {
         "user": user,
         "domain": get_current_site(request).domain,
         "uid": urlsafe_base64_encode(force_bytes(user.pk)),

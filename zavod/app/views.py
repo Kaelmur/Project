@@ -1,12 +1,12 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required, user_passes_test
-from django.views.generic import ListView, DetailView, CreateView, DeleteView
+from django.contrib.auth.decorators import user_passes_test
+from django.views.generic import ListView, DetailView, CreateView
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from users.models import UserManage as CustomUser
 from django.contrib.auth.models import Group
 from .models import Order, Pay, FractionPrice
 from .forms import PayForm, MeasureForm, MeasureApprovedForm, FractionPriceForm, OrderForm, SearchForm
-from django.http import FileResponse, JsonResponse
+from django.http import FileResponse
 from django.contrib import messages
 from django.core.mail import EmailMessage
 from reportlab.lib.pagesizes import A4
@@ -20,7 +20,6 @@ import json
 import io
 import os
 import math
-from datetime import datetime
 
 
 def user_belongs_to_security_group(user):
@@ -33,39 +32,11 @@ def user_belongs_to_loader_group(user):
     return loader_group in user.groups.all()
 
 
-class LoaderOrderListView(UserPassesTestMixin, ListView):
-    model = Order
-    template_name = 'app/loader_orders.html'
-    context_object_name = 'loader_orders'
-    paginate_by = 2
-
-    def test_func(self):
-        user = CustomUser.objects.get(id=self.request.user.id)
-        return user_belongs_to_loader_group(user)
-
-    def get_queryset(self):
-        return Order.objects.filter(step='загрузка').order_by("-date_ordered")
-
-
-class SecurityOrderListView(UserPassesTestMixin, ListView):
-    model = Order
-    template_name = 'app/security_orders.html'
-    context_object_name = 'security_orders'
-    paginate_by = 2
-
-    def test_func(self):
-        user = CustomUser.objects.get(id=self.request.user.id)
-        return user_belongs_to_security_group(user)
-
-    def get_queryset(self):
-        return Order.objects.filter(Q(status='оплачен') | Q(status='выехал')).order_by("-date_ordered")
-
-
 class SecurityApproveOrderListView(UserPassesTestMixin, ListView):
     model = Order
     template_name = 'pages/security_approve_orders.html'
     context_object_name = 'security_approve_orders'
-    paginate_by = 2
+    paginate_by = 5
 
     def test_func(self):
         user = CustomUser.objects.get(id=self.request.user.id)
@@ -97,27 +68,10 @@ class PaidOrderListView(UserPassesTestMixin, ListView):
         return context
 
 
-class AllOrdersListView(UserPassesTestMixin, ListView):
-    model = Order
-    template_name = 'app/orders.html'
-    context_object_name = "all_orders"
-    paginate_by = 2
-
-    def test_func(self):
-        return self.request.user.is_superuser
-
-    def get_queryset(self):
-        return Order.objects.exclude(status='неоплачено').order_by("-date_ordered")
-
-
-def verify(request):
-    return render(request, "app/verify.html")
-
-
 @user_passes_test(lambda u: u.is_superuser)
 def download_check(request, file_id):
     file = get_object_or_404(Pay, pk=file_id)
-    file_url = file.file.url[1:]
+    file_url = os.path.join('media', file.file.name)
     file_extension = os.path.splitext(file_url)[1].lower()
     allowed_extensions = ['.pdf', '.jpg', '.jpeg', '.png']
     if file_extension in allowed_extensions:
@@ -125,10 +79,6 @@ def download_check(request, file_id):
         response = FileResponse(open(file_url, 'rb'), content_type=content_type)
         response['Content-Disposition'] = f'attachment; filename="{file.id}{file_extension}"'
         return response
-
-
-def verify_email(request):
-    return render(request, "app/verify_email.html")
 
 
 def pdf_create(order, fraction, price, price_without_nds, price_nds):

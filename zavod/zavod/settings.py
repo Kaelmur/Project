@@ -38,7 +38,6 @@ INSTALLED_APPS = [
     "users",
     'corsheaders',
     "crispy_forms",
-    "crispy_bootstrap5",
     'compressor',
     "django_flatpickr",
     'django.contrib.admin',

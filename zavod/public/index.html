@@ -1,6 +1,6 @@
 {% extends '_base.html' %}
 {% load static %}
-{% block title %}Dashboard{% endblock %}
+{% block title %}Главная{% endblock %}
 {% block custom_span1 %}
 <span class="absolute inset-y-0 left-0 w-1 bg-purple-600 rounded-tr-lg rounded-br-lg" aria-hidden="true"></span>
 {% endblock custom_span1 %}
@@ -126,7 +126,7 @@ text-gray-800 dark:text-gray-100
                         </span>
                         {% elif order.status == 'модерация' %}
                         <span
-                          class="px-2 py-1 font-semibold leading-tight text-blue-100 bg-blue-600 rounded-full dark:bg-blue-600 dark:text-blue-100"
+                          class="px-2 py-1 font-semibold leading-tight text-blue-500 bg-blue-100 rounded-full dark:bg-blue-500 dark:text-blue-100"
                         >
                           {{ order.status }}
                         </span>
@@ -228,7 +228,6 @@ text-gray-800 dark:text-gray-100
                 </span>
               </div>
             </div>
-
             <!-- Charts -->
             <h2
               class="my-6 text-2xl font-semibold text-gray-700 dark:text-gray-200"
@@ -364,10 +363,18 @@ text-gray-800 dark:text-gray-100
                         >
                           {{ order.status }}
                         </span>
+                        {% elif order.status == 'выполняется' %}
+                        <span class="px-2 py-1 font-semibold leading-tight text-orange-500 bg-orange-100 rounded-full dark:bg-orange-400 dark:text-white">
+                          {{ order.status }}
+                        </span>
                         {% elif order.status == 'модерация' %}
                         <span
-                          class="px-2 py-1 font-semibold leading-tight text-yellow-700 bg-yellow-100 rounded-full dark:bg-teal-700 dark:text-teal-100"
+                          class="px-2 py-1 font-semibold leading-tight text-blue-500 bg-blue-100 rounded-full dark:bg-blue-500 dark:text-blue-100"
                         >
+                          {{ order.status }}
+                        </span>
+                        {% elif order.status == 'завершен' %}
+                        <span class="px-2 py-1 font-semibold leading-tight text-purple-600 bg-purple-200 rounded-full dark:text-purple-200 dark:bg-purple-600">
                           {{ order.status }}
                         </span>
                         {% else %}
@@ -523,6 +530,7 @@ text-gray-800 dark:text-gray-100
                       <th class="px-4 py-3">Покупатель</th>
                       <th class="px-4 py-3">Машина</th>
                       <th class="px-4 py-3">Время</th>
+                      <th class="px-4 py-3">Время резерва</th>
                       <th class="px-4 py-3">Статус</th>
                       <th class="px-4 py-3">Детали</th>
                     </tr>
@@ -549,6 +557,9 @@ text-gray-800 dark:text-gray-100
                       </td>
                       <td class="px-4 py-3 text-sm">
                         <p class="font-semibold">{{ order.date_ordered|date:"H:i d/m/Y" }}</p>
+                      </td>
+                      <td class="px-4 py-3 text-sm">
+                        <p class="font-semibold">{{ order.date_reserved|date:"H:i d/m/Y" }}</p>
                       </td>
                       <td class="px-4 py-3 text-xs">
                         {% if order.status == 'неоплачено' %}
@@ -706,7 +717,7 @@ text-gray-800 dark:text-gray-100
                       <td class="px-4 py-3 text-xs">
                         <p class="font-semibold">{{ order.step }}</p>
                       </td>
-                      <td class="px-4 py-3 text-sm">
+                      <td class="px-4 py-3 text-sm text-purple-600">
                         <a href="{% url 'loader_approved' order.id %}">Подтвердить</a>
                       </td>
                     </tr>

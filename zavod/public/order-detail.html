@@ -21,6 +21,10 @@
                 Масса: {{ object.mass }} тонн
               </p>
 
+               <p class="mb-4 text-gray-600 dark:text-gray-400">
+                Осталось: {{ object.weight_left }} тонн
+              </p>
+
               <p class="mb-4 text-gray-600 dark:text-gray-400">
                 Фракция: {{ object.fraction }}
               </p>
@@ -34,7 +38,7 @@
               </p>
             </div>
             {% if not user.is_superuser %}
-                  {% if object.status == 'оплачен' and object.buyer == 'юр.лицо' or object.buyer == 'физ.лицо' %}
+                  {% if object.status != 'неоплачено' and object.status != 'модерация' and object.status != 'завершен' and object.buyer == 'юр.лицо' or object.buyer == 'физ.лицо' %}
                   <!-- Info -->
                   <div class="flex flex-row items-center justify-center min-w-0 p-4 bg-white rounded-lg shadow-xs dark:bg-gray-800">
                  <svg class="w-8 h-8 mr-4 text-purple-600" fill="currentColor" viewBox="0 0 24 24">
