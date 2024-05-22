@@ -21,7 +21,7 @@
                 Масса: {{ object.mass }} тонн
               </p>
 
-               <p class="mb-4 text-gray-600 dark:text-gray-400">
+               <p class="mb-4 text-black dark:text-white">
                 Осталось: {{ object.weight_left }} тонн
               </p>
 
@@ -37,6 +37,13 @@
                 Машина: {{ object.registration_certificate }}
               </p>
             </div>
+                  {% if object.status == 'завершен' %}
+                  <div class="flex flex-row items-center justify-center min-w-0 p-4 bg-white rounded-lg shadow-xs dark:bg-gray-800">
+                      <p class="mb-4 text-purple-600 dark:text-purple-400">
+                          Заказ завершен
+                      </p>
+                  </div>
+                  {% endif %}
             {% if not user.is_superuser %}
                   {% if object.status != 'неоплачено' and object.status != 'модерация' and object.status != 'завершен' and object.buyer == 'юр.лицо' or object.buyer == 'физ.лицо' %}
                   <!-- Info -->

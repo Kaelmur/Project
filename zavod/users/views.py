@@ -12,6 +12,7 @@ from django.core.mail import EmailMessage
 from .models import UserManage as CustomUser
 
 
+@user_passes_test(lambda u: u.is_superuser)
 def change_role(request, pk):
     form = UserChangeRoleForm(request.POST)
     if request.method == "POST":
