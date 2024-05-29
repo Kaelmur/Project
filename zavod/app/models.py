@@ -15,11 +15,6 @@ class FractionPrice(models.Model):
 
 
 class Order(models.Model):
-    STATUS_CHOICES = [
-        ('done', 'Done'),
-        ('pending', 'Pending'),
-        ('continuing', 'Continuing'),
-    ]
     MANUFACTORY_CHOICES = [('4 цех', '4 цех'), ('ЦПШ', 'ЦПШ')]
     BUYER_CHOICES = [('юр.лицо', "юр.лицо"), ("физ.лицо", "физ.лицо")]
     registration_certificate = models.CharField(max_length=100, verbose_name="Номер машины")
@@ -35,7 +30,7 @@ class Order(models.Model):
     manufactory = models.CharField(max_length=20, choices=MANUFACTORY_CHOICES, default='Не указано')
     buyer = models.CharField(max_length=20, choices=BUYER_CHOICES, default='физ.лицо')
     weight_left = models.IntegerField(default=0)
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='неоплачено')
+    status = models.CharField(max_length=20, default='неоплачено')
     step = models.CharField(max_length=20, default='охрана')
     cycle = models.CharField(max_length=20, default=0)
     cycle_total = models.CharField(max_length=20, default=1)

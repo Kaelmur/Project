@@ -10,6 +10,7 @@ from users.forms import CustomAuthenticationForm
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('api/', include('api.urls')),
     path("", include("app.urls")),
     path("register/", user_views.register, name="register"),
     path("activate/<uidb64>/<token>", user_views.activate, name="activate"),

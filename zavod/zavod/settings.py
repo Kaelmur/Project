@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     "app",
     "users",
     'corsheaders',
+    'rest_framework',
     "crispy_forms",
     'compressor',
     "django_flatpickr",
@@ -47,6 +48,15 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 ]
+
+REST_FRAMEWORK = {
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.AllowAny',
+    ],
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.BasicAuthentication',
+    ],
+}
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
