@@ -1,0 +1,7 @@
+{% autoescape off %}
+Hi {{ user.username }},
+
+Click the link below to verify your email:
+
+{{ protocol }}://{{ domain }}{% url 'api-verify-email' uidb64=uid token=token %}
+{% endautoescape %}

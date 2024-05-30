@@ -91,7 +91,7 @@ def pdf_create(order, fraction, price, price_without_nds, price_nds):
     can.drawString(110, 450, f'{order.user.username}{order.user.iin}, {order.user.address_index}, Республика Казахстан, г.Актобе')
     can.drawString(90, 412, f'{order.user.username} {order.user.iin}')
     can.drawString(115, 385, f'{order.user.address_index}, Республика Казахстан, Актюбинская обл., г.Актобе')
-    can.drawString(175, 181, str(order.mass))
+    can.drawString(170, 181, str(order.mass))
     can.drawString(202, 181, str(fraction.price))
     can.drawString(252, 181, str(price_without_nds))
     can.drawString(252, 143, str(price_without_nds))
