@@ -1,12 +1,16 @@
 from rest_framework import generics, permissions
 from rest_framework.views import APIView
+from django.shortcuts import get_object_or_404
 from app.models import Order, FractionPrice, Pay
 from django.utils import timezone
 from django.core.mail import EmailMessage
 from rest_framework import serializers
-from .serializers import OrderSerializer, UserLoginSerializer, UserRegisterSerializer, OrderCreateSerializer, PaySerializer
+from .serializers import (OrderSerializer, UserLoginSerializer, UserRegisterSerializer, OrderCreateSerializer,
+                          PaySerializer, MeasureSerializer, MeasureApprovedSerializer, FractionSerializer,
+                          UserSerializer, ChangeRoleSerializer)
 from PyPDF2 import PdfWriter, PdfReader
 from rest_framework.response import Response
+from django.http import FileResponse
 from reportlab.pdfgen import canvas
 from reportlab.pdfbase import pdfmetrics
 from rest_framework import status
@@ -22,6 +26,8 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from django.contrib.auth.models import Group
 from reportlab.lib.pagesizes import A4
 from django.db.models import Q
+import math
+import os
 import io
 
 
@@ -33,6 +39,16 @@ def user_belongs_to_security_group(user):
 def user_belongs_to_loader_group(user):
     loader_group = Group.objects.get(name='loader')
     return loader_group in user.groups.all()
+
+
+class IsLoaderGroup(permissions.BasePermission):
+    message = 'User does not belong to the loader group'
+
+    def has_permission(self, request, view):
+        if request.user.is_authenticated:
+            user = CustomUser.objects.get(id=request.user.id)
+            return user_belongs_to_loader_group(user)
+        return False
 
 
 class IsSecurityGroup(permissions.BasePermission):
@@ -48,6 +64,54 @@ class IsSecurityGroup(permissions.BasePermission):
 class IsOwnerOrSuperuser(permissions.BasePermission):
     def has_object_permission(self, request, view, obj):
         return request.user == obj.user or request.user.is_superuser
+
+
+class IsSuperUserOrInSecurityGroup(permissions.BasePermission):
+    message = 'No permission'
+
+    def has_permission(self, request, view):
+        return request.user.is_superuser or user_belongs_to_security_group(request.user)
+
+
+class UserList(generics.ListAPIView):
+    queryset = CustomUser.objects.all()
+    serializer_class = UserSerializer
+    permission_classes = [permissions.IsAdminUser]
+    http_method_names = ['get']
+
+
+class UserDetail(generics.RetrieveAPIView):
+    queryset = CustomUser.objects.all()
+    serializer_class = UserSerializer
+    permission_classes = [permissions.IsAuthenticated, IsSuperUserOrInSecurityGroup]
+
+
+class FractionPrices(generics.ListAPIView):
+    queryset = FractionPrice.objects.all()
+    serializer_class = FractionSerializer
+    permission_classes = [permissions.IsAdminUser]
+    http_method_names = ['get']
+
+
+class FractionPriceCreateUpdate(generics.GenericAPIView):
+    queryset = FractionPrice.objects.all()
+    serializer_class = FractionSerializer
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        fraction = serializer.validated_data.get('fraction')
+        price = serializer.validated_data.get('price')
+
+        existing_fraction_price = FractionPrice.objects.filter(fraction=fraction).first()
+
+        if existing_fraction_price:
+            existing_fraction_price.price = price
+            existing_fraction_price.save()
+            return Response({"message": "Цена на фракцию обновлена"}, status=status.HTTP_200_OK)
+        else:
+            serializer.save()
+            return Response({"message": "Цена на фракцию установлена"}, status=status.HTTP_201_CREATED)
 
 
 class PaidOrderListView(generics.ListAPIView):
@@ -68,7 +132,6 @@ class OrderListView(generics.ListAPIView):
     queryset = Order.objects.all()
     serializer_class = OrderSerializer
     permission_classes = [permissions.IsAuthenticated]
-    paginate_by = 5
     http_method_names = ['get']
 
     def get_queryset(self):
@@ -88,7 +151,7 @@ class OrderListView(generics.ListAPIView):
 class OrderDetailView(generics.RetrieveAPIView):
     queryset = Order.objects.all()
     serializer_class = OrderSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsOwnerOrSuperuser]
     parser_classes = [MultiPartParser, FormParser]
 
     def post(self, request, *args, **kwargs):
@@ -287,6 +350,17 @@ def pdf_create(order, fraction, price, price_without_nds, price_nds):
     return output_pdf_bytes_final.getvalue()
 
 
+class SecurityOrderApprove(APIView):
+    permission_classes = [permissions.IsAuthenticated, IsSecurityGroup]
+
+    def post(self, request, pk):
+        order = Order.objects.get(pk=pk)
+        order.status = 'выполняется'
+        order.step = 'весы'
+        order.save()
+        return Response({'message': 'Заказ подтвержден'}, status=status.HTTP_200_OK)
+
+
 class SecurityOrderExitApprovedView(APIView):
     permission_classes = [permissions.IsAuthenticated, IsSecurityGroup]
 
@@ -311,3 +385,87 @@ class ActivateOrder(APIView):
         order.status = "оплачен"
         order.save()
         return Response({'detail': 'Заказ активирован'}, status=status.HTTP_200_OK)
+
+
+class Measurement(APIView):
+    permission_classes = [permissions.IsAdminUser]
+
+    def post(self, request, pk):
+        serializer = MeasureSerializer(data=request.data)
+        if serializer.is_valid():
+            lifting_capacity = serializer.validated_data['mass']
+            manufactory = serializer.validated_data['manufactory']
+            order = Order.objects.get(pk=pk)
+            order.manufactory = manufactory
+            if int(order.cycle) == 0:
+                order.cycle = math.ceil(int(order.mass) / int(lifting_capacity))
+                order.weight_left = order.mass
+                order.cycle_total = math.ceil(int(order.mass) / int(lifting_capacity))
+            order.step = 'загрузка'
+            order.save()
+            return Response({'message': 'Заказ взвешен и подтвержден!', 'order_id': order.id},
+                            status=status.HTTP_200_OK)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class MeasureApproved(APIView):
+    permission_classes = [permissions.IsAdminUser]
+
+    def post(self, request, pk):
+        serializer = MeasureApprovedSerializer(data=request.data)
+        if serializer.is_valid():
+            measured_weight = serializer.validated_data['mass']
+            order = Order.objects.get(pk=pk)
+            order.weight_left = float(order.weight_left) - float(measured_weight)
+            order.step = 'охрана-выход'
+            order.save()
+            return Response({'message': 'Заказ взвешен и подтвержден!'}, status=status.HTTP_200_OK)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class LoaderApprove(APIView):
+    permission_classes = [permissions.IsAuthenticated, IsLoaderGroup]
+
+    def post(self, request, pk):
+        order = Order.objects.get(pk=pk)
+        order.step = 'весы-подтверждение'
+        order.save()
+        return Response({'message': 'Загрузка подтверждена!'}, status=status.HTTP_200_OK)
+
+
+class ChangeRole(APIView):
+    permission_classes = [permissions.IsAdminUser]
+
+    def post(self, request, pk):
+        serializer = ChangeRoleSerializer(data=request.data)
+        if serializer.is_valid():
+            user = CustomUser.objects.get(pk=pk)
+            group = serializer.validated_data['role']
+            user.groups.add(group)
+            return Response({'message': f'Роль {user.username} изменена на {group}', 'user_id': user.id},
+                            status=status.HTTP_200_OK)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class DownloadCheck(APIView):
+    permission_classes = [permissions.IsAdminUser]
+
+    def get(self, request, file_id):
+        file = get_object_or_404(Pay, pk=file_id)
+        file_url = os.path.join('media', file.file.name)
+        file_extension = os.path.splitext(file_url)[1].lower()
+        allowed_extensions = ['.pdf', '.jpg', '.jpeg', '.png']
+
+        if file_extension in allowed_extensions:
+            content_type = 'application/pdf' if file_extension == '.pdf' else 'image/*'
+            try:
+                response = FileResponse(open(file_url, 'rb'), content_type=content_type)
+                response['Content-Disposition'] = f'attachment; filename="{file.id}{file_extension}"'
+                return response
+            except FileNotFoundError:
+                return Response({'message': 'File not found.'}, status=status.HTTP_404_NOT_FOUND)
+        else:
+            return Response({'message': 'File type not allowed'}, status=status.HTTP_400_BAD_REQUEST)

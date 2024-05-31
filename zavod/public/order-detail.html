@@ -45,7 +45,7 @@
                   </div>
                   {% endif %}
             {% if not user.is_superuser %}
-                  {% if object.status != 'неоплачено' and object.status != 'модерация' and object.status != 'завершен' and object.buyer == 'юр.лицо' or object.buyer == 'физ.лицо' %}
+                  {% if object.status != 'завершен' and object.status != 'неоплачено' and object.status != 'модерация' and object.buyer == 'юр.лицо' or object.buyer == 'физ.лицо' %}
                   <!-- Info -->
                   <div class="flex flex-row items-center justify-center min-w-0 p-4 bg-white rounded-lg shadow-xs dark:bg-gray-800">
                  <svg class="w-8 h-8 mr-4 text-purple-600" fill="currentColor" viewBox="0 0 24 24">
