@@ -6,6 +6,8 @@ from users import views as user_views
 from django.contrib.auth.decorators import login_required
 from app.urls import guest_required
 from users.forms import CustomAuthenticationForm
+from django.conf import settings
+from django.conf.urls.static import static
 
 
 urlpatterns = [

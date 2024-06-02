@@ -4,6 +4,9 @@ from .views import (OrderListView, OrderCreateView, LoginUserView, VerifyEmailVi
                     ActivateOrder, Measurement, MeasureApproved, LoaderApprove, SecurityOrderApprove, FractionPrices,
                     FractionPriceCreateUpdate, UserList, UserDetail, ChangeRole, DownloadCheck)
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from .yasg import urlpatterns as doc_urls
+from django.conf import settings
+from django.conf.urls.static import static
 
 
 urlpatterns = [
@@ -31,3 +34,5 @@ urlpatterns = [
     path('user-role-change/<int:pk>', ChangeRole.as_view(), name='api-change-role'),
     path('download/<int:file_id>/', DownloadCheck.as_view(), name='api-download-check'),
 ]
+
+urlpatterns += doc_urls

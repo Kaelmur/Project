@@ -28,7 +28,6 @@ INSTALLED_APPS = [
     'corsheaders',
     'rest_framework',
     'rest_framework_simplejwt',
-    'rest_framework_simplejwt.token_blacklist',
     "crispy_forms",
     'compressor',
     "django_flatpickr",
@@ -38,6 +37,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'drf_yasg',
 ]
 
 REST_FRAMEWORK = {
@@ -135,9 +135,15 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
 
-STATIC_URL = 'assets/'
+STATIC_URL = '/static/'
 
-COMPRESS_ROOT = BASE_DIR / 'public/assets'
+STATICFILES_DIRS = [
+    BASE_DIR / "static",
+]
+
+STATIC_ROOT = BASE_DIR / "staticfiles"
+
+COMPRESS_ROOT = BASE_DIR / 'public/static'
 
 COMPRESS_ENABLED = True
 
