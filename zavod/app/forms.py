@@ -1,10 +1,7 @@
-from django import forms
-from .models import Order, Pay, FractionPrice
 from django_flatpickr.widgets import DateTimePickerInput
-from django_flatpickr.schemas import FlatpickrOptions
+from .models import Order, Pay, FractionPrice
+from django import forms
 import os
-from django.conf import settings
-from django.utils import timezone
 
 
 class OrderForm(forms.ModelForm):

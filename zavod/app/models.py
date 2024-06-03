@@ -1,15 +1,15 @@
-from django.db import models
-from django.utils import timezone
-from users.models import UserManage as CustomUser
 from django.core.validators import MinValueValidator
+from users.models import UserManage as CustomUser
 from .validators import validate_file_extension
+from django.utils import timezone
+from django.db import models
 
 
 class FractionPrice(models.Model):
     fraction = models.CharField(max_length=100, choices=[
         ("0-5", "0-5"), ("5-20", "5-20"), ("20-40", "20-40"),
         ("5-40", "5-40"), ("40-70", "40-70"),
-        ('Бутовый камень', "Бутовый камень")
+        ('Rubble_stone', "Бутовый камень")
     ])
     price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
 
@@ -20,7 +20,7 @@ class Order(models.Model):
     registration_certificate = models.CharField(max_length=100, verbose_name="Номер машины")
     fraction = models.CharField(max_length=100, choices=[("0-5", "0-5"), ("5-20", "5-20"), ("20-40", "20-40"),
                                                          ("5-40", "5-40"), ("40-70", "40-70"),
-                                                         ('Бутовый камень', "Бутовый камень")],
+                                                         ('Rubble_stone', "Бутовый камень")],
                                 verbose_name="Фракция щебня", default="0")
     mass = models.FloatField(validators=[MinValueValidator(0)], verbose_name="Масса щебня (тонн)")
     price = models.CharField(max_length=100, default=0)

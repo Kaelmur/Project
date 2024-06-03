@@ -26,7 +26,11 @@
               </p>
 
               <p class="mb-4 text-gray-600 dark:text-gray-400">
+                  {% if object.fraction == 'Rubble_stone' %}
+                  Фракция: Бутовый камень
+                  {% else %}
                 Фракция: {{ object.fraction }}
+                  {% endif %}
               </p>
 
               <p class="mb-4 text-gray-600 dark:text-gray-400">

@@ -1,30 +1,34 @@
-from django.shortcuts import render, redirect
-from django.contrib.auth import login
-from django.contrib.auth.decorators import user_passes_test
-from .forms import UserRegisterForm, UserLoginForm, UserChangeRoleForm
-from django.contrib import messages
-from django.contrib.auth.tokens import default_token_generator
-from django.template.loader import render_to_string
-from django.contrib.sites.shortcuts import get_current_site
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from .forms import UserRegisterForm, UserLoginForm, UserChangeRoleForm
+from django.contrib.auth.tokens import default_token_generator
+from django.contrib.auth.decorators import user_passes_test
+from django.contrib.sites.shortcuts import get_current_site
 from django.utils.encoding import force_str, force_bytes
-from django.core.mail import EmailMessage
+from django.template.loader import render_to_string
+from django.shortcuts import render, redirect
 from .models import UserManage as CustomUser
+from django.core.mail import EmailMessage
+from django.contrib.auth import login
+from django.contrib import messages
 
 
-@user_passes_test(lambda u: u.is_superuser)
-def change_role(request, pk):
-    form = UserChangeRoleForm(request.POST)
+# Authentication
+@user_passes_test(lambda u: not u.is_authenticated, login_url="profile")
+def register(request):
     if request.method == "POST":
+        form = UserRegisterForm(request.POST)
         if form.is_valid():
-            user = CustomUser.objects.get(pk=pk)
-            group = form.cleaned_data["role"]
-            user.groups.add(group)
-            messages.success(request, f"Роль {user.username} изменена на {group}")
-            return redirect('user-detail', pk=user.id)
+            email = form.cleaned_data['email']
+            name = form.cleaned_data['username']
+            iin = form.cleaned_data["iin"]
+            address_index = form.cleaned_data["address_index"]
+            user = CustomUser.objects.create_user(email=email, username=name, iin=iin, address_index=address_index)
+            user.is_active = False
+            activate_email(request, user, form.cleaned_data.get("email"))
+            return redirect("register")
     else:
-        form = UserChangeRoleForm()
-    return render(request, 'add_role_to_user.html', {'form': form})
+        form = UserRegisterForm()
+    return render(request, "pages/create-account.html", {"form": form})
 
 
 def login_user(request):
@@ -43,6 +47,7 @@ def login_user(request):
     return render(request, 'pages/login.html', {"form": form})
 
 
+# Email views
 def send_verification_email(request, user):
     uid = urlsafe_base64_encode(force_bytes(user.pk))
     mail_subject = "Log in"
@@ -81,24 +86,6 @@ def verify_email(request, uidb64, token):
         return redirect('login')
 
 
-@user_passes_test(lambda u: not u.is_authenticated, login_url="profile")
-def register(request):
-    if request.method == "POST":
-        form = UserRegisterForm(request.POST)
-        if form.is_valid():
-            email = form.cleaned_data['email']
-            name = form.cleaned_data['username']
-            iin = form.cleaned_data["iin"]
-            address_index = form.cleaned_data["address_index"]
-            user = CustomUser.objects.create_user(email=email, username=name, iin=iin, address_index=address_index)
-            user.is_active = False
-            activate_email(request, user, form.cleaned_data.get("email"))
-            return redirect("register")
-    else:
-        form = UserRegisterForm()
-    return render(request, "pages/create-account.html", {"form": form})
-
-
 def activate_email(request, user, to_email):
     token = default_token_generator.make_token(user)
     mail_subject = "Verify your email"
@@ -129,3 +116,19 @@ def activate(request, uidb64, token):
         login(request, user)
         messages.success(request, f"Ваш аккаунт {user.username} успешно создан!")
         return redirect('profile')
+
+
+# Change User's role
+@user_passes_test(lambda u: u.is_superuser)
+def change_role(request, pk):
+    form = UserChangeRoleForm(request.POST)
+    if request.method == "POST":
+        if form.is_valid():
+            user = CustomUser.objects.get(pk=pk)
+            group = form.cleaned_data["role"]
+            user.groups.add(group)
+            messages.success(request, f"Роль {user.username} изменена на {group}")
+            return redirect('user-detail', pk=user.id)
+    else:
+        form = UserChangeRoleForm()
+    return render(request, 'add_role_to_user.html', {'form': form})

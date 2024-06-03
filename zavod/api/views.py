@@ -1,36 +1,37 @@
-from rest_framework import generics, permissions
-from rest_framework.views import APIView
-from django.shortcuts import get_object_or_404
-from app.models import Order, FractionPrice, Pay
-from django.utils import timezone
-from django.core.mail import EmailMessage
-from rest_framework import serializers
 from .serializers import (OrderSerializer, UserLoginSerializer, UserRegisterSerializer, OrderCreateSerializer,
                           PaySerializer, MeasureSerializer, MeasureApprovedSerializer, FractionSerializer,
                           UserSerializer, ChangeRoleSerializer)
-from PyPDF2 import PdfWriter, PdfReader
-from rest_framework.response import Response
-from django.http import FileResponse
-from reportlab.pdfgen import canvas
-from reportlab.pdfbase import pdfmetrics
-from rest_framework import status
-from django.template.loader import render_to_string
-from django.utils.encoding import force_str, force_bytes
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from rest_framework.parsers import MultiPartParser, FormParser
 from django.contrib.auth.tokens import default_token_generator
 from django.contrib.sites.shortcuts import get_current_site
-from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
-from users.models import UserManage as CustomUser
-from reportlab.pdfbase.ttfonts import TTFont
 from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework.parsers import MultiPartParser, FormParser
+from django.utils.encoding import force_str, force_bytes
+from django.template.loader import render_to_string
+from rest_framework import generics, permissions
+from app.models import Order, FractionPrice, Pay
+from users.models import UserManage as CustomUser
+from django.shortcuts import get_object_or_404
+from reportlab.pdfbase.ttfonts import TTFont
 from django.contrib.auth.models import Group
+from rest_framework.response import Response
+from django.core.mail import EmailMessage
+from rest_framework.views import APIView
+from reportlab.pdfbase import pdfmetrics
+from PyPDF2 import PdfWriter, PdfReader
 from reportlab.lib.pagesizes import A4
+from rest_framework import serializers
+from django.http import FileResponse
+from reportlab.pdfgen import canvas
+from rest_framework import status
+from django.utils import timezone
 from django.db.models import Q
 import math
 import os
 import io
 
 
+# VALIDATORS
 def user_belongs_to_security_group(user):
     security_group = Group.objects.get(name='security')
     return security_group in user.groups.all()
@@ -73,6 +74,7 @@ class IsSuperUserOrInSecurityGroup(permissions.BasePermission):
         return request.user.is_superuser or user_belongs_to_security_group(request.user)
 
 
+# USERS
 class UserList(generics.ListAPIView):
     queryset = CustomUser.objects.all()
     serializer_class = UserSerializer
@@ -86,6 +88,7 @@ class UserDetail(generics.RetrieveAPIView):
     permission_classes = [permissions.IsAuthenticated, IsSuperUserOrInSecurityGroup]
 
 
+# FRACTIONS
 class FractionPrices(generics.ListAPIView):
     queryset = FractionPrice.objects.all()
     serializer_class = FractionSerializer
@@ -114,58 +117,7 @@ class FractionPriceCreateUpdate(generics.GenericAPIView):
             return Response({"message": "Цена на фракцию установлена"}, status=status.HTTP_201_CREATED)
 
 
-class PaidOrderListView(generics.ListAPIView):
-    queryset = Order.objects.filter(status='модерация').order_by("-date_ordered")
-    serializer_class = OrderSerializer
-    permission_classes = [permissions.IsAdminUser]
-    http_method_names = ['get']
-
-
-class SecurityApproveOrderListView(generics.ListAPIView):
-    queryset = Order.objects.filter(step='охрана-выход').order_by("-date_ordered")
-    serializer_class = OrderSerializer
-    permission_classes = [permissions.IsAuthenticated, IsSecurityGroup]
-    http_method_names = ['get']
-
-
-class OrderListView(generics.ListAPIView):
-    queryset = Order.objects.all()
-    serializer_class = OrderSerializer
-    permission_classes = [permissions.IsAuthenticated]
-    http_method_names = ['get']
-
-    def get_queryset(self):
-        user = self.request.user
-
-        if user.is_superuser:
-            queryset = Order.objects.exclude(status='неоплачено').order_by("-date_ordered")
-            return queryset
-        elif user.groups.filter(name='security').exists():
-            return Order.objects.filter(Q(status='оплачен') | Q(status='выехал')).order_by("-date_ordered")
-        elif user.groups.filter(name='loader').exists():
-            return Order.objects.filter(step='загрузка').order_by("-date_ordered")
-        else:
-            return Order.objects.filter(user=self.request.user).order_by("-date_ordered")
-
-
-class OrderDetailView(generics.RetrieveAPIView):
-    queryset = Order.objects.all()
-    serializer_class = OrderSerializer
-    permission_classes = [permissions.IsAuthenticated, IsOwnerOrSuperuser]
-    parser_classes = [MultiPartParser, FormParser]
-
-    def post(self, request, *args, **kwargs):
-        order = self.get_object()
-        serializer = PaySerializer(data=request.data)
-        if serializer.is_valid():
-            file = Pay(file=request.FILES.get('file'), order=order)
-            file.save()
-            order.status = 'модерация'
-            order.save()
-            return Response({'detail': 'Чек принят. Ждите подтверждения'}, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
+# ORDER LISTS, CREATIONS, ETC
 class OrderCreateView(generics.CreateAPIView):
     queryset = Order.objects.all()
     serializer_class = OrderCreateSerializer
@@ -207,6 +159,59 @@ class OrderCreateView(generics.CreateAPIView):
             Response({"Order activated"}, status=status.HTTP_200_OK)
 
 
+class OrderListView(generics.ListAPIView):
+    queryset = Order.objects.all()
+    serializer_class = OrderSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    http_method_names = ['get']
+
+    def get_queryset(self):
+        user = self.request.user
+
+        if user.is_superuser:
+            queryset = Order.objects.exclude(status='неоплачено').order_by("-date_ordered")
+            return queryset
+        elif user.groups.filter(name='security').exists():
+            return Order.objects.filter(Q(status='оплачен') | Q(status='выехал')).order_by("-date_ordered")
+        elif user.groups.filter(name='loader').exists():
+            return Order.objects.filter(step='загрузка').order_by("-date_ordered")
+        else:
+            return Order.objects.filter(user=self.request.user).order_by("-date_ordered")
+
+
+class PaidOrderListView(generics.ListAPIView):
+    queryset = Order.objects.filter(status='модерация').order_by("-date_ordered")
+    serializer_class = OrderSerializer
+    permission_classes = [permissions.IsAdminUser]
+    http_method_names = ['get']
+
+
+class SecurityApproveOrderListView(generics.ListAPIView):
+    queryset = Order.objects.filter(step='охрана-выход').order_by("-date_ordered")
+    serializer_class = OrderSerializer
+    permission_classes = [permissions.IsAuthenticated, IsSecurityGroup]
+    http_method_names = ['get']
+
+
+class OrderDetailView(generics.RetrieveAPIView):
+    queryset = Order.objects.all()
+    serializer_class = OrderSerializer
+    permission_classes = [permissions.IsAuthenticated, IsOwnerOrSuperuser]
+    parser_classes = [MultiPartParser, FormParser]
+
+    def post(self, request, *args, **kwargs):
+        order = self.get_object()
+        serializer = PaySerializer(data=request.data)
+        if serializer.is_valid():
+            file = Pay(file=request.FILES.get('file'), order=order)
+            file.save()
+            order.status = 'модерация'
+            order.save()
+            return Response({'detail': 'Чек принят. Ждите подтверждения'}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+# USER AUTHENTICATION
 class RegisterUserView(APIView):
 
     permission_classes = [permissions.AllowAny]
@@ -350,6 +355,7 @@ def pdf_create(order, fraction, price, price_without_nds, price_nds):
     return output_pdf_bytes_final.getvalue()
 
 
+# Order functionality (SECURITY)
 class SecurityOrderApprove(APIView):
     permission_classes = [permissions.IsAuthenticated, IsSecurityGroup]
 
@@ -377,6 +383,7 @@ class SecurityOrderExitApprovedView(APIView):
         return Response({'detail': 'Выезд зазачика подтвержден'}, status=status.HTTP_200_OK)
 
 
+# Order functionality (ADMIN)
 class ActivateOrder(APIView):
     permission_classes = [permissions.IsAdminUser]
 
@@ -425,6 +432,7 @@ class MeasureApproved(APIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+# Order functionality (LOADER)
 class LoaderApprove(APIView):
     permission_classes = [permissions.IsAuthenticated, IsLoaderGroup]
 
@@ -435,6 +443,7 @@ class LoaderApprove(APIView):
         return Response({'message': 'Загрузка подтверждена!'}, status=status.HTTP_200_OK)
 
 
+# ADMIN FUNCTIONS
 class ChangeRole(APIView):
     permission_classes = [permissions.IsAdminUser]
 
