@@ -1,15 +1,4 @@
-const fractionCounts = {};
-
-ordersData.forEach(order => {
-    const fraction = order.fraction;
-    fractionCounts[fraction] = (fractionCounts[fraction] || 0) + 1;
-});
-
-const uniqueFractions = Object.keys(fractionCounts).sort();
-
-const counts = uniqueFractions.map(fraction => fractionCounts[fraction]);
-
-console.log(counts)
+const pieLabels = ['0-5', '5-20', '20-40', '5-40', '40-70', 'Бутовый камень']
 
 const pieConfig = {
   type: 'doughnut',
@@ -20,7 +9,7 @@ const pieConfig = {
         label: 'Dataset 1',
       },
     ],
-    labels: ['0-5', '5-20', '20-40', '5-40', '40-70', 'Rubble_stone'],
+    labels: pieLabels,
   },
   options: {
     responsive: true,
@@ -31,8 +20,26 @@ const pieConfig = {
   },
 }
 
-pieConfig.data.datasets[0].data = counts;
+const fractionNameToIndex = {};
+pieLabels.forEach((name, index) => {
+  fractionNameToIndex[name] = index;
+});
 
+function countOrdersPerFraction(data) {
+
+    const fractionCounts = Array(pieLabels.length).fill(0);
+
+    data.forEach(item => {
+        const fractionName = item.fraction;
+        const fractionIndex = fractionNameToIndex[fractionName];
+
+        fractionCounts[fractionIndex]++;
+    });
+
+    return fractionCounts;
+}
+
+pieConfig.data.datasets[0].data = countOrdersPerFraction(ordersData);
 
 const pieCtx = document.getElementById('pie')
 window.myPie = new Chart(pieCtx, pieConfig)

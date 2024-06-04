@@ -20,6 +20,7 @@ from rest_framework.views import APIView
 from reportlab.pdfbase import pdfmetrics
 from PyPDF2 import PdfWriter, PdfReader
 from reportlab.lib.pagesizes import A4
+from background_task import background
 from rest_framework import serializers
 from django.http import FileResponse
 from reportlab.pdfgen import canvas
@@ -145,18 +146,24 @@ class OrderCreateView(generics.CreateAPIView):
             mail_subject = f"Оплата заказа #{order.id}"
             message = "Check pdf file below to checkout"
             pdf = pdf_create(order, fractions_price, total_price, price_without_nds, price_nds)
-            email_send = EmailMessage(mail_subject, message, attachments=[("paycheck.pdf", pdf, 'application/pdf')],
-                                      to=[user.email])
-            if email_send.send():
-                Response({'Заказ создан, счет на предоплату отправлен вам на почту!'}, status=status.HTTP_200_OK)
-            else:
-                order.delete()
-                raise serializers.ValidationError(
-                    f"Problem sending email to {user.email}, please check if you typed it correctly")
+            pay_send(user.email, pdf, mail_subject, message, order.id)
+            return Response({'message': 'Заказ создан, счет на предоплату отправлен вам на почту!', 'order': order},
+                            status=status.HTTP_200_OK)
         else:
             order.status = "оплачен"
             order.save()
             Response({"Order activated"}, status=status.HTTP_200_OK)
+
+
+def pay_send(email, pdf, mail_subject, message, order_id):
+    email_send = EmailMessage(mail_subject, message, attachments=[("paycheck.pdf", pdf, 'application/pdf')],
+                              to=[email])
+    if email_send.send():
+        Response({'Заказ создан, счет на предоплату отправлен вам на почту!'}, status=status.HTTP_200_OK)
+    else:
+        order_id.delete()
+        raise serializers.ValidationError(
+            f"Problem sending email to {email}, please check if you typed it correctly")
 
 
 class OrderListView(generics.ListAPIView):

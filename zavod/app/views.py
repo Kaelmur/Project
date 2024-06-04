@@ -59,17 +59,9 @@ class OrderCreateView(UserPassesTestMixin, LoginRequiredMixin, CreateView):
         order = form.instance
         if buyer == "юр.лицо":
             mail_subject = f"Оплата заказа #{order.id}"
-            message = "Check pdf file below to checkout"
+            message = "PDF файл с предоплатой"
             pdf = pdf_create(order, fractions_price, form.instance.price, price_without_nds, price_nds)
-            email_send = EmailMessage(mail_subject, message, attachments=[("paycheck.pdf", pdf,
-                                                                           'application/pdf')],
-                                      to=[self.request.user.email])
-            if email_send.send():
-                messages.success(self.request, 'Заказ создан, счет на предоплату отправлен вам на почту!')
-            else:
-                messages.error(self.request, f"Problem sending email to {self.request.user.email},"
-                                              f""f"please check if you typed it correctly")
-                return redirect("order-detail", order.id)
+            send_pay(self.request, self.request.user, pdf, mail_subject, message, order)
         else:
             order.status = "оплачен"
             order.save()
@@ -112,7 +104,7 @@ class OrderListView(ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        all_orders = Order.objects.all()
+        all_orders = Order.objects.exclude(status='неоплачено').order_by("-date_ordered")
         bought_orders = Order.objects.exclude(status='неоплачено')
         bought_data = [
             {key: value.strftime("%Y-%m-%d %H:%M:%S") for key, value in order.items() if key == 'date_ordered'}
@@ -378,3 +370,15 @@ def pdf_create(order, fraction, price, price_without_nds, price_nds):
     output.write(output_pdf_bytes_final)
     output_pdf_bytes_final.seek(0)
     return output_pdf_bytes_final.getvalue()
+
+
+def send_pay(request, user, pdf, mail_subject, message, order):
+    email_send = EmailMessage(mail_subject, message, attachments=[("paycheck.pdf", pdf,
+                                                                   'application/pdf')],
+                              to=[user])
+    if email_send.send():
+        messages.success(request, 'Заказ создан, счет на предоплату отправлен вам на почту!')
+    else:
+        messages.error(request, f"Проблема отправки письма на {user.email},"
+                                     f""f"Введите существующую почту!")
+        return redirect("order-detail", order.id)

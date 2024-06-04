@@ -31,6 +31,7 @@ INSTALLED_APPS = [
     "crispy_forms",
     'compressor',
     "django_flatpickr",
+    'background_task',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',

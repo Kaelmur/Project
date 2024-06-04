@@ -87,13 +87,6 @@ function countOrdersPerMonth(data) {
 
 const ordersPerMonth = countOrdersPerMonth(boughtData);
 
-
-function addDataToLineChart(newData) {
-
-  lineConfig.data.datasets[0].data.push(newData);
-
-  window.myLine.update();
-}
 lineConfig.data.datasets[0].data = ordersPerMonth;
 const lineCtx = document.getElementById('line')
 window.myLine = new Chart(lineCtx, lineConfig)
