@@ -20,7 +20,6 @@ from rest_framework.views import APIView
 from reportlab.pdfbase import pdfmetrics
 from PyPDF2 import PdfWriter, PdfReader
 from reportlab.lib.pagesizes import A4
-from background_task import background
 from rest_framework import serializers
 from django.http import FileResponse
 from reportlab.pdfgen import canvas
@@ -152,7 +151,7 @@ class OrderCreateView(generics.CreateAPIView):
         else:
             order.status = "оплачен"
             order.save()
-            Response({"Order activated"}, status=status.HTTP_200_OK)
+            return Response({"Order activated"}, status=status.HTTP_200_OK)
 
 
 def pay_send(email, pdf, mail_subject, message, order_id):

@@ -30,8 +30,8 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     "crispy_forms",
     'compressor',
+    'celery',
     "django_flatpickr",
-    'background_task',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -72,6 +72,14 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+BROKER_URL = os.environ.get('RABBITMQ_URL', 'amqp://localhost')
+CELERY_RESULT_BACKEND = 'rpc://'
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = 'Asia/Almaty'
+CELERY_ENABLE_UTC = False
 
 CORS_ALLOW_ALL_ORIGINS = True
 

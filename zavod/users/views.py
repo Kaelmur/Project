@@ -10,6 +10,7 @@ from .models import UserManage as CustomUser
 from django.core.mail import EmailMessage
 from django.contrib.auth import login
 from django.contrib import messages
+from app.tasks import verification
 
 
 # Authentication
@@ -62,11 +63,13 @@ def send_verification_email(request, user):
         'token': token,
         'protocol': protocol,
     })
-    email_send = EmailMessage(mail_subject, message, to=[user.email])
-    if email_send.send():
-        messages.success(request, f"На вашу почту было отправлено письмо с ссылкой!")
-    else:
-        messages.error(request, f"Возникла проблема при отправке письма.")
+    # email_send = EmailMessage(mail_subject, message, to=[user.email])
+    verification.delay(user.email, mail_subject, message)
+    messages.success(request, f"На вашу почту было отправлено письмо с ссылкой!")
+    # if email_send.send():
+    #     messages.success(request, f"На вашу почту было отправлено письмо с ссылкой!")
+    # else:
+    #     messages.error(request, f"Возникла проблема при отправке письма.")
 
 
 def verify_email(request, uidb64, token):
@@ -96,11 +99,13 @@ def activate_email(request, user, to_email):
         "token": token,
         "protocol": "https" if request.is_secure() else "http",
     })
-    email_send = EmailMessage(mail_subject, message, to=[to_email])
-    if email_send.send():
-        messages.success(request, f"На вашу почту было отправлено письмо с регистрирующей ссылкой!")
-    else:
-        messages.error(request, f"Возникла проблема при отправке письма.")
+    # email_send = EmailMessage(mail_subject, message, to=[to_email])
+    verification.delay(to_email, mail_subject, message)
+    messages.success(request, f"На вашу почту было отправлено письмо с регистрирующей ссылкой!")
+    # if email_send.send():
+    #     messages.success(request, f"На вашу почту было отправлено письмо с регистрирующей ссылкой!")
+    # else:
+    #     messages.error(request, f"Возникла проблема при отправке письма.")
 
 
 def activate(request, uidb64, token):

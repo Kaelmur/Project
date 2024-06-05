@@ -15,6 +15,7 @@ from django.http import FileResponse
 from django.contrib import messages
 from reportlab.pdfgen import canvas
 from django.utils import timezone
+from .tasks import send_pay_task
 from django.db.models import Q
 import json
 import math
@@ -373,12 +374,13 @@ def pdf_create(order, fraction, price, price_without_nds, price_nds):
 
 
 def send_pay(request, user, pdf, mail_subject, message, order):
-    email_send = EmailMessage(mail_subject, message, attachments=[("paycheck.pdf", pdf,
-                                                                   'application/pdf')],
-                              to=[user])
-    if email_send.send():
-        messages.success(request, 'Заказ создан, счет на предоплату отправлен вам на почту!')
-    else:
-        messages.error(request, f"Проблема отправки письма на {user.email},"
-                                     f""f"Введите существующую почту!")
-        return redirect("order-detail", order.id)
+    # email_send = EmailMessage(mail_subject, message, attachments=[("paycheck.pdf", pdf,
+    #                                                                'application/pdf')],
+    #                           to=[user])
+    send_pay_task.delay(user.email, pdf, mail_subject, message, order.id)
+    # if email_send.send():
+    messages.success(request, 'Заказ создан, счет на предоплату отправлен вам на почту!')
+    # else:
+    #     messages.error(request, f"Проблема отправки письма на {user.email},"
+    #                                  f""f"Введите существующую почту!")
+    #     return redirect("order-detail", order.id)
