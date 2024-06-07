@@ -23,6 +23,7 @@ from reportlab.lib.pagesizes import A4
 from rest_framework import serializers
 from django.http import FileResponse
 from reportlab.pdfgen import canvas
+from app.tasks import verification, send_pay_task
 from rest_framework import status
 from django.utils import timezone
 from django.db.models import Q
@@ -145,7 +146,7 @@ class OrderCreateView(generics.CreateAPIView):
             mail_subject = f"Оплата заказа #{order.id}"
             message = "Check pdf file below to checkout"
             pdf = pdf_create(order, fractions_price, total_price, price_without_nds, price_nds)
-            pay_send(user.email, pdf, mail_subject, message, order.id)
+            send_pay_task(user.email, pdf, mail_subject, message, order.id)
             return Response({'message': 'Заказ создан, счет на предоплату отправлен вам на почту!', 'order': order},
                             status=status.HTTP_200_OK)
         else:
@@ -154,15 +155,15 @@ class OrderCreateView(generics.CreateAPIView):
             return Response({"Order activated"}, status=status.HTTP_200_OK)
 
 
-def pay_send(email, pdf, mail_subject, message, order_id):
-    email_send = EmailMessage(mail_subject, message, attachments=[("paycheck.pdf", pdf, 'application/pdf')],
-                              to=[email])
-    if email_send.send():
-        Response({'Заказ создан, счет на предоплату отправлен вам на почту!'}, status=status.HTTP_200_OK)
-    else:
-        order_id.delete()
-        raise serializers.ValidationError(
-            f"Problem sending email to {email}, please check if you typed it correctly")
+# def pay_send(email, pdf, mail_subject, message, order_id):
+#     email_send = EmailMessage(mail_subject, message, attachments=[("paycheck.pdf", pdf, 'application/pdf')],
+#                               to=[email])
+#     if email_send.send():
+#         Response({'Заказ создан, счет на предоплату отправлен вам на почту!'}, status=status.HTTP_200_OK)
+#     else:
+#         order_id.delete()
+#         raise serializers.ValidationError(
+#             f"Problem sending email to {email}, please check if you typed it correctly")
 
 
 class OrderListView(generics.ListAPIView):
@@ -240,18 +241,14 @@ class RegisterUserView(APIView):
             "token": token,
             "protocol": "https" if request.is_secure() else "http",
         })
-        email_send = EmailMessage(mail_subject, message, to=[user.email])
-        if email_send.send():
-            return True
-        else:
-            return False
+        verification.delay(user.email, mail_subject, message)
 
 
 class ActivateEmail(APIView):
 
     permission_classes = [permissions.AllowAny]
 
-    def get(self, uidb64, token):
+    def get(self, request, uidb64, token):
         try:
             uid = force_str(urlsafe_base64_decode(uidb64))
             user = CustomUser.objects.get(pk=uid)
@@ -300,11 +297,7 @@ class LoginUserView(APIView):
             'token': token,
             'protocol': protocol,
         })
-        email_send = EmailMessage(mail_subject, message, to=[user.email])
-        if email_send.send():
-            return True
-        else:
-            return False
+        verification.delay(user.email, mail_subject, message)
 
 
 class VerifyEmailView(APIView):
@@ -320,12 +313,14 @@ class VerifyEmailView(APIView):
 
         if user is not None and default_token_generator.check_token(user, token):
             refresh = RefreshToken.for_user(user)
+            user.is_active = True
             user.email_verified = True
             user.save()
             return Response({
                 'refresh': str(refresh),
                 'access': str(refresh.access_token),
-                'user': {'id': user.id, 'username': user.username, 'mail': user.email, 'iin': user.iin, 'address_index': user.address_index, 'email_verified': user.email_verified}}, status=status.HTTP_200_OK)
+                'user': {'id': user.id, 'username': user.username, 'mail': user.email, 'iin': user.iin,
+                         'address_index': user.address_index, 'email_verified': user.email_verified}}, status=status.HTTP_200_OK)
         return Response({'detail': 'Invalid verification link'}, status=status.HTTP_400_BAD_REQUEST)
 
 
