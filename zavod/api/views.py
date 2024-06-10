@@ -1,6 +1,6 @@
 from .serializers import (OrderSerializer, UserLoginSerializer, UserRegisterSerializer, OrderCreateSerializer,
                           PaySerializer, MeasureSerializer, MeasureApprovedSerializer, FractionSerializer,
-                          UserSerializer, ChangeRoleSerializer)
+                          UserSerializer, ChangeRoleSerializer, OrderDetailSerializer)
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from rest_framework.parsers import MultiPartParser, FormParser
 from django.contrib.auth.tokens import default_token_generator
@@ -12,6 +12,7 @@ from rest_framework import generics, permissions
 from app.models import Order, FractionPrice, Pay
 from users.models import UserManage as CustomUser
 from django.shortcuts import get_object_or_404
+from drf_yasg.utils import swagger_auto_schema
 from reportlab.pdfbase.ttfonts import TTFont
 from django.contrib.auth.models import Group
 from rest_framework.response import Response
@@ -27,6 +28,7 @@ from app.tasks import verification, send_pay_task
 from rest_framework import status
 from django.utils import timezone
 from django.db.models import Q
+from drf_yasg import openapi
 import math
 import os
 import io
@@ -79,14 +81,29 @@ class IsSuperUserOrInSecurityGroup(permissions.BasePermission):
 class UserList(generics.ListAPIView):
     queryset = CustomUser.objects.all()
     serializer_class = UserSerializer
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes = [IsSuperUserOrInSecurityGroup]
     http_method_names = ['get']
+
+    @swagger_auto_schema(
+        operation_description="Получает список пользователей (для Админа и Охранника)",
+        responses={200: UserSerializer(many=True)},
+    )
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
 
 
 class UserDetail(generics.RetrieveAPIView):
     queryset = CustomUser.objects.all()
     serializer_class = UserSerializer
     permission_classes = [permissions.IsAuthenticated, IsSuperUserOrInSecurityGroup]
+    http_method_names = ['get']
+
+    @swagger_auto_schema(
+        operation_description="Детали пользователя",
+        responses={200: UserSerializer(many=True)},
+    )
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
 
 
 # FRACTIONS
@@ -96,11 +113,23 @@ class FractionPrices(generics.ListAPIView):
     permission_classes = [permissions.IsAdminUser]
     http_method_names = ['get']
 
+    @swagger_auto_schema(
+        operation_description="Получает список фракций и их цен (для Админа)",
+        responses={200: FractionSerializer(many=True)},
+    )
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
+
 
 class FractionPriceCreateUpdate(generics.GenericAPIView):
     queryset = FractionPrice.objects.all()
     serializer_class = FractionSerializer
+    permission_classes = [permissions.IsAdminUser]
 
+    @swagger_auto_schema(
+        operation_description="Назначает цену фракции (для Админа)",
+        responses={200: 'Цена на фракцию обновлена', 201: 'Цена на фракцию установлена'},
+    )
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -125,7 +154,11 @@ class OrderCreateView(generics.CreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
     http_method_names = ['post']
 
-    def perform_create(self, serializer):
+    @swagger_auto_schema(
+        operation_description="Создание заказа",
+        responses={200: 'Заказ создан'},
+    )
+    def post(self, request, serializer):
         user = self.request.user
         mass = serializer.validated_data['mass']
         buyer = serializer.validated_data['buyer']
@@ -152,7 +185,7 @@ class OrderCreateView(generics.CreateAPIView):
         else:
             order.status = "оплачен"
             order.save()
-            return Response({"Order activated"}, status=status.HTTP_200_OK)
+            return Response({"Заказ создан"}, status=status.HTTP_200_OK)
 
 
 # def pay_send(email, pdf, mail_subject, message, order_id):
@@ -172,7 +205,11 @@ class OrderListView(generics.ListAPIView):
     permission_classes = [permissions.IsAuthenticated]
     http_method_names = ['get']
 
-    def get_queryset(self):
+    @swagger_auto_schema(
+        operation_description="Получает список заказов на основе роли пользователя",
+        responses={200: OrderSerializer(many=True)},
+    )
+    def get(self, request, *args, **kwargs):
         user = self.request.user
 
         if user.is_superuser:
@@ -192,6 +229,13 @@ class PaidOrderListView(generics.ListAPIView):
     permission_classes = [permissions.IsAdminUser]
     http_method_names = ['get']
 
+    @swagger_auto_schema(
+        operation_description="Получает список заказов на модерации (для Админа)",
+        responses={200: OrderSerializer(many=True)},
+    )
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
+
 
 class SecurityApproveOrderListView(generics.ListAPIView):
     queryset = Order.objects.filter(step='охрана-выход').order_by("-date_ordered")
@@ -199,13 +243,34 @@ class SecurityApproveOrderListView(generics.ListAPIView):
     permission_classes = [permissions.IsAuthenticated, IsSecurityGroup]
     http_method_names = ['get']
 
+    @swagger_auto_schema(
+        operation_description="Получает список заказов на выезд (для Охранника)",
+        responses={200: OrderSerializer(many=True)},
+    )
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
+
 
 class OrderDetailView(generics.RetrieveAPIView):
     queryset = Order.objects.all()
     serializer_class = OrderSerializer
     permission_classes = [permissions.IsAuthenticated, IsOwnerOrSuperuser]
     parser_classes = [MultiPartParser, FormParser]
+    http_method_names = ['post', 'get']
 
+    @swagger_auto_schema(
+        operation_description="Детали заказа",
+        responses={200: OrderSerializer(many=True)},
+    )
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
+
+    @swagger_auto_schema(
+        operation_description="Пользователь отправляет чек об оплате для модерации",
+        responses={200: 'Чек принят. Ждите подтверждения', 400: 'Bad request'},
+        request_body=PaySerializer,
+        exclude=['order'],
+    )
     def post(self, request, *args, **kwargs):
         order = self.get_object()
         serializer = PaySerializer(data=request.data)
@@ -223,6 +288,10 @@ class RegisterUserView(APIView):
 
     permission_classes = [permissions.AllowAny]
 
+    @swagger_auto_schema(
+        operation_description="Регистрация пользователя",
+        responses={200: 'Verification email sent.'},
+    )
     def post(self, request, *args, **kwargs):
         serializer = UserRegisterSerializer(data=request.data)
         if serializer.is_valid():
@@ -248,6 +317,9 @@ class ActivateEmail(APIView):
 
     permission_classes = [permissions.AllowAny]
 
+    @swagger_auto_schema(
+        operation_description="Активирует почту и генерирует токен",
+    )
     def get(self, request, uidb64, token):
         try:
             uid = force_str(urlsafe_base64_decode(uidb64))
@@ -272,6 +344,10 @@ class LoginUserView(APIView):
 
     permission_classes = [permissions.AllowAny]
 
+    @swagger_auto_schema(
+        operation_description="Логинация пользователя",
+        responses={200: 'Verification email sent.', 404: 'User not found', 400: 'Bad request'},
+    )
     def post(self, request, *args, **kwargs):
         serializer = UserLoginSerializer(data=request.data)
         if serializer.is_valid():
@@ -304,6 +380,9 @@ class VerifyEmailView(APIView):
 
     permission_classes = [permissions.AllowAny]
 
+    @swagger_auto_schema(
+        operation_description="Верификация почты",
+    )
     def get(self, request, uidb64, token, *args, **kwargs):
         try:
             uid = force_str(urlsafe_base64_decode(uidb64))
@@ -320,7 +399,8 @@ class VerifyEmailView(APIView):
                 'refresh': str(refresh),
                 'access': str(refresh.access_token),
                 'user': {'id': user.id, 'username': user.username, 'mail': user.email, 'iin': user.iin,
-                         'address_index': user.address_index, 'email_verified': user.email_verified}}, status=status.HTTP_200_OK)
+                         'address_index': user.address_index, 'email_verified': user.email_verified}},
+                status=status.HTTP_200_OK)
         return Response({'detail': 'Invalid verification link'}, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -360,6 +440,10 @@ def pdf_create(order, fraction, price, price_without_nds, price_nds):
 class SecurityOrderApprove(APIView):
     permission_classes = [permissions.IsAuthenticated, IsSecurityGroup]
 
+    @swagger_auto_schema(
+        operation_description="Подтверждение въезда пользователя (для Охранника)",
+        responses={200: 'Заказ подтвержден'}
+    )
     def post(self, request, pk):
         order = Order.objects.get(pk=pk)
         order.status = 'выполняется'
@@ -371,13 +455,17 @@ class SecurityOrderApprove(APIView):
 class SecurityOrderExitApprovedView(APIView):
     permission_classes = [permissions.IsAuthenticated, IsSecurityGroup]
 
+    @swagger_auto_schema(
+        operation_description="Подтверждение выезда пользователя (для Охранника)",
+        responses={200: 'Выезд зазачика подтвержден'}
+    )
     def post(self, request, pk):
         order = Order.objects.get(pk=pk)
         order.status = 'выехал'
         order.step = 'охрана'
         order.cycle = int(order.cycle) - 1
         order.cycles_left = int(order.cycles_left) + 1
-        if int(order.cycle) <= 0:
+        if int(order.cycle) <= 0 or int(order.weight_left) <= 0:
             order.step = 'завершен'
             order.status = 'завершен'
         order.save()
@@ -388,6 +476,10 @@ class SecurityOrderExitApprovedView(APIView):
 class ActivateOrder(APIView):
     permission_classes = [permissions.IsAdminUser]
 
+    @swagger_auto_schema(
+        operation_description="Подтверждение оплаты заказа на модерации (для Админа)",
+        responses={200: 'Заказ активирован'},
+    )
     def post(self, request, pk):
         order = Order.objects.get(pk=pk)
         order.status = "оплачен"
@@ -398,6 +490,10 @@ class ActivateOrder(APIView):
 class Measurement(APIView):
     permission_classes = [permissions.IsAdminUser]
 
+    @swagger_auto_schema(
+        operation_description="Подтверждение взвешивания (для Админа)",
+        responses={200: 'Заказ взвешен и подтвержден!', 400: 'Bad request'},
+    )
     def post(self, request, pk):
         serializer = MeasureSerializer(data=request.data)
         if serializer.is_valid():
@@ -420,6 +516,10 @@ class Measurement(APIView):
 class MeasureApproved(APIView):
     permission_classes = [permissions.IsAdminUser]
 
+    @swagger_auto_schema(
+        operation_description="Подтверждение взвешивания после загрузки (для Админа)",
+        responses={200: 'Заказ взвешен и подтвержден!', 400: 'Bad request'},
+    )
     def post(self, request, pk):
         serializer = MeasureApprovedSerializer(data=request.data)
         if serializer.is_valid():
@@ -437,6 +537,10 @@ class MeasureApproved(APIView):
 class LoaderApprove(APIView):
     permission_classes = [permissions.IsAuthenticated, IsLoaderGroup]
 
+    @swagger_auto_schema(
+        operation_description="Подтверждение загрузки (для Загрузчика)",
+        responses={200: 'Загрузка подтверждена!'}
+    )
     def post(self, request, pk):
         order = Order.objects.get(pk=pk)
         order.step = 'весы-подтверждение'
@@ -448,6 +552,10 @@ class LoaderApprove(APIView):
 class ChangeRole(APIView):
     permission_classes = [permissions.IsAdminUser]
 
+    @swagger_auto_schema(
+        operation_description="Меняет роль пользователя (для Админа)",
+        responses={200: 'Роль успешно изменена', 400: 'Bad request'},
+    )
     def post(self, request, pk):
         serializer = ChangeRoleSerializer(data=request.data)
         if serializer.is_valid():
@@ -463,6 +571,9 @@ class ChangeRole(APIView):
 class DownloadCheck(APIView):
     permission_classes = [permissions.IsAdminUser]
 
+    @swagger_auto_schema(
+        operation_description="Скачивает чек предоставленный пользователем (для Админа)",
+    )
     def get(self, request, file_id):
         file = get_object_or_404(Pay, pk=file_id)
         file_url = os.path.join('media', file.file.name)

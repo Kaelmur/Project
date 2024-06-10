@@ -43,6 +43,13 @@ class OrderCreateSerializer(serializers.ModelSerializer):
         fields = ["registration_certificate", "fraction", "mass", 'date_reserved', 'buyer']
 
 
+class OrderDetailSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Order
+        fields = ["registration_certificate", "fraction", "mass", 'date_reserved', 'buyer']
+
+
 class OrderSerializer(serializers.ModelSerializer):
 
     class Meta:
