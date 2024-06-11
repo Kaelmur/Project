@@ -255,6 +255,7 @@
                 class="relative w-full max-w-xl mr-6 focus-within:text-purple-500"
               >
                 <div class="absolute inset-y-0 flex items-center pl-2">
+                  {% if search_form %}
                   <svg
                     class="w-4 h-4"
                     aria-hidden="true"
@@ -267,6 +268,7 @@
                       clip-rule="evenodd"
                     ></path>
                   </svg>
+                  {% endif %}
                 </div>
                 <form method="GET">
                 {{ search_form }}

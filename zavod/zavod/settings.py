@@ -84,7 +84,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-BROKER_URL = os.environ.get('RABBITMQ_URL', 'amqp://localhost')
+CELERY_BROKER_URL = os.environ.get('RABBITMQ_URL', 'amqp://localhost')
 CELERY_RESULT_BACKEND = 'rpc://'
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'

@@ -8,6 +8,6 @@ class Command(BaseCommand):
     def handle(self, *args, **kwargs):
         app = Celery('zavod')
         app.config_from_object('django.conf:settings', namespace='CELERY')
-        app.autodiscover_tasks()
-
         app.worker_main(argv=['worker', '--loglevel=info', '-P', 'gevent', '--autoscale=10,3'])
+
+        app.autodiscover_tasks()

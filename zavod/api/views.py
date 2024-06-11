@@ -1,6 +1,6 @@
 from .serializers import (OrderSerializer, UserLoginSerializer, UserRegisterSerializer, OrderCreateSerializer,
                           PaySerializer, MeasureSerializer, MeasureApprovedSerializer, FractionSerializer,
-                          UserSerializer, ChangeRoleSerializer, OrderDetailSerializer)
+                          UserSerializer, ChangeRoleSerializer)
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from rest_framework.parsers import MultiPartParser, FormParser
 from django.contrib.auth.tokens import default_token_generator
@@ -11,6 +11,7 @@ from django.template.loader import render_to_string
 from rest_framework import generics, permissions
 from app.models import Order, FractionPrice, Pay
 from users.models import UserManage as CustomUser
+from app.tasks import verification, send_pay_task
 from django.shortcuts import get_object_or_404
 from drf_yasg.utils import swagger_auto_schema
 from reportlab.pdfbase.ttfonts import TTFont
@@ -21,14 +22,11 @@ from rest_framework.views import APIView
 from reportlab.pdfbase import pdfmetrics
 from PyPDF2 import PdfWriter, PdfReader
 from reportlab.lib.pagesizes import A4
-from rest_framework import serializers
 from django.http import FileResponse
 from reportlab.pdfgen import canvas
-from app.tasks import verification, send_pay_task
 from rest_framework import status
 from django.utils import timezone
 from django.db.models import Q
-from drf_yasg import openapi
 import math
 import os
 import io
