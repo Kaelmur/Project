@@ -156,7 +156,10 @@ class OrderCreateView(generics.CreateAPIView):
         operation_description="Создание заказа",
         responses={200: 'Заказ создан'},
     )
-    def post(self, request, serializer):
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
         user = self.request.user
         mass = serializer.validated_data['mass']
         buyer = serializer.validated_data['buyer']
@@ -172,18 +175,19 @@ class OrderCreateView(generics.CreateAPIView):
         total_price = price_without_nds + price_nds
 
         order = serializer.save(user=user, price=total_price)
+        order_data = OrderSerializer(order).data
 
         if buyer == "юр.лицо":
             mail_subject = f"Оплата заказа #{order.id}"
             message = "Check pdf file below to checkout"
             pdf = pdf_create(order, fractions_price, total_price, price_without_nds, price_nds)
-            send_pay_task(user.email, pdf, mail_subject, message, order.id)
-            return Response({'message': 'Заказ создан, счет на предоплату отправлен вам на почту!', 'order': order},
+            send_pay_task.delay(user.email, pdf, mail_subject, message, order.id)
+            return Response({'message': 'Заказ создан, счет на предоплату отправлен вам на почту!', 'order': order_data},
                             status=status.HTTP_200_OK)
         else:
             order.status = "оплачен"
             order.save()
-            return Response({"Заказ создан"}, status=status.HTTP_200_OK)
+            return Response({'message': 'Заказ создан', 'order': order_data}, status=status.HTTP_200_OK)
 
 
 # def pay_send(email, pdf, mail_subject, message, order_id):
